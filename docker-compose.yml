@@ -1,0 +1,85 @@
+services:
+  nginx:
+    image: nginx:1.27-alpine
+    ports:
+      - "80:80"
+      # - "443:443"
+    volumes:
+      - frontend_dist:/usr/share/nginx/html:ro
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      # - ./nginx/certbot/conf:/etc/letsencrypt
+      # - ./nginx/certbot/www:/var/www/certbot
+      - media:/media:ro
+    depends_on:
+      - frontend-build
+      - gunicorn
+      - daphne
+      - redis
+
+  frontend-build:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    command: ["sh", "-c", "cp -r /app/dist/* /dist"]
+    volumes:
+      - frontend_dist:/dist
+
+  gunicorn:
+    build: ./backend
+    command: >
+      sh -c "
+        ./wait-for-it.sh mysql 3306 &&
+        python manage.py migrate &&
+        gunicorn illusion_classroom.wsgi:application -b 0.0.0.0:8000 -w 3
+      "
+    volumes:
+      - media:/app/media
+    env_file: .env
+    environment:
+      DJANGO_SETTINGS_MODULE: illusion_classroom.settings
+      DB_HOST: mysql
+      DB_PORT: 3306
+    depends_on:
+      - mysql
+      - redis
+    expose:
+      - "8000"
+
+  daphne:
+    build: ./backend
+    command: daphne -b 0.0.0.0 -p 8001 illusion_classroom.asgi:application
+    volumes:
+      - media:/app/media
+    env_file: .env
+    environment:
+      DJANGO_SETTINGS_MODULE: illusion_classroom.settings
+      DB_HOST: mysql
+      DB_PORT: 3306
+    depends_on:
+      - mysql
+      - redis
+    expose:
+      - "8001"
+
+  redis:
+    image: redis:7-alpine
+    expose:
+      - "6379"
+
+  mysql:
+    image: mysql:8.0
+    volumes:
+      - mysql_data:/var/lib/mysql
+    env_file: .env
+    environment:
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+    expose:
+      - "3306"
+
+volumes:
+  frontend_dist:
+  media:
+  mysql_data:
