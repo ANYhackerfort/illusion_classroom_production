@@ -1,0 +1,103 @@
+/* VideoDropBox.css */
+.video-drop-box {
+  border-radius: 12px;
+  padding: 16px; /* slightly less padding for more horizontal fit */
+  min-height: 220px;
+  max-height: 700px; /* limit height */
+  overflow-y: auto; /* scroll if content exceeds max height */
+  gap: 12px; /* space between items */
+  display: block;
+  position:relative;
+}
+
+/* Modern thin scrollbar styling */
+.video-drop-box::-webkit-scrollbar {
+  width: 8px;
+}
+
+.video-drop-box::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.4);
+  border-radius: 4px;
+}
+
+.video-drop-box::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.6);
+}
+
+.video-drop-box::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.video-drop-box.dragging {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.video-drop-box > p {
+  margin: 0 0 12px 0;
+  color: #555;
+  font-size: 14px;
+}
+
+.bot-masonry {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 16px;
+}
+
+
+.drop-message {
+  text-align: center;
+  color: #666;
+  width: 100%; /* span full width */
+  margin: 0px 0; /* give it a bit of spacing */
+  padding-top: 8.8%;
+}
+
+.bot-card-wrapper {
+  flex: 1 1 300px; /* allow wrapping, minimum width 300px */
+  max-width: 100%;  /* don't overflow */
+}
+
+/* Overlay */
+.vdb-overlay {
+  position: absolute;
+  inset: 0;
+  backdrop-filter: blur(4px);
+  background: rgba(17, 17, 17, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  z-index: 50;
+  pointer-events: none;
+  border-radius: 12px;
+}
+
+/* Spinner */
+.vdb-spinner {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 3px solid rgba(255,255,255,0.35);
+  border-top-color: white;
+  animation: vdb-spin 0.9s linear infinite;
+}
+
+@keyframes vdb-spin {
+  to { transform: rotate(360deg); }
+}
+
+.vdb-loading-text {
+  color: white;
+  font-size: 14px;
+  letter-spacing: 0.3px;
+  font-weight: 500;
+}
+
+/* Prevent interactions while loading */
+.bot-masonry.disabled {
+  pointer-events: none;
+  opacity: 0.5;
+  filter: grayscale(0.2);
+}

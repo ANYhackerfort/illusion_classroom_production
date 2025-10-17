@@ -1,0 +1,116 @@
+.art-background {
+  width: 100vw;
+  height: 100vh;
+  background: radial-gradient(circle at center, #0f0c29, #302b63, #24243e);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+}
+
+.art-text {
+  color: white;
+  font-size: 2rem;
+  font-weight: bold;
+  margin-bottom: 30px;
+  z-index: 2;
+  text-shadow:
+    0 0 4px #fff,
+    0 0 8px #aaa;
+}
+
+.lab-credit {
+  color: #ccc;
+  font-size: 1rem;
+  font-style: italic;
+  z-index: 2;
+  margin-top: -30px;
+  margin-bottom: 60px;
+  text-shadow: 0 0 8px #aaa;
+}
+
+.psychedelic-art {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.blob {
+  position: absolute;
+  border-radius: 50%;
+  mix-blend-mode: screen;
+  transform: translate3d(
+    calc(var(--x, 0) * 100vw),
+    calc(var(--y, 0) * 100vh),
+    0
+  );
+  transition: transform 2.5s ease-in-out;
+}
+
+/* Large blobs */
+.blob-large {
+  width: 100px;
+  height: 100px;
+  background: linear-gradient(45deg, #ff6ec4, #7873f5);
+  opacity: 0.3;
+}
+
+/* Small blobs */
+.blob-small {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(45deg, #43cea2, #185a9d);
+  opacity: 0.2;
+}
+
+/* Extra visual variation */
+.blob:nth-child(odd) {
+  background: linear-gradient(45deg, #fcb045, #fd1d1d, #833ab4);
+}
+
+.blob:nth-child(3n) {
+  opacity: 0.4;
+}
+
+.blob:nth-child(4n) {
+  opacity: 0.5;
+}
+.configure-button {
+  background: linear-gradient(135deg, #6e8efb, #a777e3);
+  color: white;
+  font-size: 1.1rem;
+  font-weight: bold;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 30px;
+  cursor: pointer;
+  z-index: 2;
+  position: relative;
+  margin-top: -40px;
+  box-shadow: 0 4px 20px rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease-in-out;
+  text-shadow: 0 0 6px rgba(255, 255, 255, 0.4);
+}
+
+.configure-button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 30px rgba(255, 255, 255, 0.4);
+}
+
+.glass-box {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 24px;
+  padding: 40px 60px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}

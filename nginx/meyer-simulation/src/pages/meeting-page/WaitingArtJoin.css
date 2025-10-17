@@ -1,0 +1,225 @@
+/* ===== Root & Tokens ===== */
+:root {
+  --glass-bg: rgba(255, 255, 255, 0.1);
+  --glass-border: rgba(255, 255, 255, 0.2);
+  --glass-bg-hover: rgba(255, 255, 255, 0.14);
+  --text: #ffffff;
+  --text-subtle: #cccccc;
+  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.25);
+  --shadow-md: 0 6px 16px rgba(0, 0, 0, 0.25);
+}
+
+/* ===== Stage ===== */
+.art-background {
+  width: 100vw;
+  height: 100vh;
+  background: radial-gradient(circle at center, #0f0c29, #302b63, #24243e);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+  color: var(--text);
+}
+
+/* ===== Liquid Glass Card ===== */
+.glass-box {
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-lg);
+  border-radius: 24px;
+  padding: 28px 28px 24px;
+  width: min(520px, 92vw);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  align-items: center;
+  z-index: 2;
+}
+
+/* Title + Credit */
+.art-text {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  text-align: center;
+  text-shadow:
+    0 0 4px #fff,
+    0 0 8px #aaa;
+}
+
+.lab-credit {
+  font-size: 0.95rem;
+  color: var(--text-subtle);
+  font-style: italic;
+  margin-top: -6px;
+  margin-bottom: 4px;
+  text-align: center;
+  text-shadow: 0 0 8px #aaa;
+}
+
+/* ===== 6-Digit Grid ===== */
+.code-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 12px;
+  width: 100%;
+  max-width: 420px;
+}
+
+.digit {
+  height: 60px;
+  border-radius: 16px;
+  text-align: center;
+  font-size: 1.75rem;
+  font-weight: 700;
+  outline: none;
+  border: 1px solid var(--glass-border);
+  /* Higher contrast background so digits stay readable over blobs */
+  background: rgba(0, 0, 0, 0.35);
+  color: var(--text);
+  transition:
+    transform 0.08s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.digit:focus {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+  background: rgba(0, 0, 0, 0.45);
+  border-color: #9aa9ff;
+}
+
+/* ===== Primary Action ===== */
+.configure-button {
+  margin-top: 8px;
+  width: 100%;
+  max-width: 420px;
+  border-radius: 16px;
+  padding: 12px 16px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  border: none;
+  /* Apple-y glass + gradient pop */
+  background: linear-gradient(135deg, #6e8efb, #a777e3);
+  color: #ffffff;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(255, 255, 255, 0.18);
+  transition:
+    transform 0.08s ease,
+    opacity 0.2s ease,
+    box-shadow 0.25s ease,
+    filter 0.25s ease;
+  text-shadow: 0 0 6px rgba(255, 255, 255, 0.35);
+}
+
+.configure-button:hover:not(.btn-disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 30px rgba(255, 255, 255, 0.32);
+  filter: saturate(1.05);
+}
+
+.btn-disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Optional: distinct enabled state hook */
+.btn-ready {
+  opacity: 1;
+}
+
+/* ===== Blobs ===== */
+.psychedelic-art {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.blob {
+  position: absolute;
+  border-radius: 50%;
+  mix-blend-mode: screen;
+  transform: translate3d(
+    calc(var(--x, 0) * 100vw),
+    calc(var(--y, 0) * 100vh),
+    0
+  );
+  transition: transform 2.5s ease-in-out;
+}
+
+/* Large blobs */
+.blob-large {
+  width: 100px;
+  height: 100px;
+  background: linear-gradient(45deg, #ff6ec4, #7873f5);
+  opacity: 0.3;
+}
+
+/* Small blobs */
+.blob-small {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(45deg, #43cea2, #185a9d);
+  opacity: 0.22;
+}
+
+/* Extra variation */
+.blob:nth-child(odd) {
+  background: linear-gradient(45deg, #fcb045, #fd1d1d, #833ab4);
+}
+.blob:nth-child(3n) {
+  opacity: 0.4;
+}
+.blob:nth-child(4n) {
+  opacity: 0.5;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 480px) {
+  .glass-box {
+    padding: 22px;
+    border-radius: 20px;
+    width: min(520px, 94vw);
+  }
+  .art-text {
+    font-size: 1.25rem;
+  }
+  .digit {
+    height: 52px;
+    font-size: 1.5rem;
+    border-radius: 14px;
+  }
+}
+
+/* Simple single input */
+.code-input {
+  width: 100%;
+  max-width: 420px;
+  padding: 12px 16px;
+  font-size: 1.2rem;
+  font-weight: 600;
+  text-align: center;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.35);
+  color: #fff;
+  outline: none;
+  margin-top: 10px;
+  margin-bottom: 14px;
+  transition:
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+}
+
+.code-input:focus {
+  background: rgba(0, 0, 0, 0.45);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+  border-color: #9aa9ff;
+}

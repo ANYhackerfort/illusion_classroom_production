@@ -1,0 +1,124 @@
+/* =========================
+   Base Ghost Card
+========================= */
+.qghost {
+  width: 220px;
+  padding: 10px;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.15);
+  opacity: 0.85;
+  user-select: none;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: absolute;
+  z-index: 9999;
+  transform: scale(0.98);
+  backdrop-filter: blur(2px);
+}
+
+/* Difficulty themes */
+.qghost.easy {
+  background-color: #e8f5e9;
+}
+.qghost.medium {
+  background-color: #fff3e0;
+}
+.qghost.hard {
+  background-color: #ffebee;
+}
+
+/* =========================
+   Header
+========================= */
+.qghost-header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+}
+
+.qghost-question {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #333;
+  line-height: 1.3;
+  word-break: break-word;
+}
+
+/* Type tag */
+.qghost-type {
+  font-size: 11px;
+  padding: 2px 5px;
+  border-radius: 6px;
+  color: #fff;
+  text-transform: uppercase;
+  background-color: #555;
+  font-weight: 500;
+}
+
+.qghost-type.mc {
+  background-color: #009688;
+}
+.qghost-type.slider {
+  background-color: #1976d2;
+}
+.qghost-type.short {
+  background-color: #7b1fa2;
+}
+
+/* =========================
+   Answers
+========================= */
+.qghost-answers {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: 100%;
+}
+
+.qghost-answer {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 6px 8px;
+  background-color: #f3f3f3;
+  border-radius: 6px;
+  font-size: 12.5px;
+  color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.qghost-answer:hover {
+  background-color: #e9e9e9;
+}
+
+/* Slider UI */
+.qghost-slider {
+  width: 100%;
+  height: 6px;
+  background: linear-gradient(to right, #90caf9, #1976d2);
+  border-radius: 3px;
+}
+
+/* Short UI */
+.qghost-short {
+  height: 24px;
+  background-color: #e0e0e0;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 12px;
+  color: #777;
+  display: flex;
+  align-items: center;
+}
+
+/* =========================
+   Hover / Transition Effects
+========================= */
+.qghost:hover {
+  transform: scale(1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+}

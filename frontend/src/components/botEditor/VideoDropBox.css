@@ -1,0 +1,98 @@
+.video-drop-box {
+  /* border-radius: 12px;  ⛔ removed */
+  padding: 16px;
+  width: 100%;
+  height: 100%; /* take full parent */
+  overflow-y: auto;
+  position: relative;
+}
+
+/* Modern thin scrollbar */
+.video-drop-box::-webkit-scrollbar {
+  width: 8px;
+}
+.video-drop-box::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.4);
+  border-radius: 4px;
+}
+.video-drop-box::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.6);
+}
+.video-drop-box::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.video-drop-box.dragging {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.video-drop-box > p {
+  margin: 0 0 12px 0;
+  color: #555;
+  font-size: 14px;
+}
+
+/* 🔵 Masonry layout with auto grid */
+.bot-masonry {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+}
+
+.bot-card-wrapper {
+  width: 100%;
+}
+
+.drop-message {
+  text-align: center;
+  color: #666;
+  width: 100%;
+  margin: 0;
+  padding-top: 8%;
+}
+
+/* Overlay (used for init + upload) */
+.vdb-overlay {
+  position: absolute;
+  inset: 0;
+  backdrop-filter: blur(4px);
+  background: rgba(17, 17, 17, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 14px;
+  z-index: 50;
+  /* border-radius: 12px; ⛔ removed */
+}
+
+/* Circular spinner */
+.vdb-spinner {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 4px solid rgba(255, 255, 255, 0.35);
+  border-top-color: white;
+  animation: vdb-spin 0.9s linear infinite;
+}
+
+@keyframes vdb-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.vdb-loading-text {
+  color: white;
+  font-size: 15px;
+  letter-spacing: 0.3px;
+  font-weight: 500;
+}
+
+/* Prevent interactions while loading */
+.bot-masonry.disabled {
+  pointer-events: none;
+  opacity: 0.5;
+  filter: grayscale(0.2);
+}

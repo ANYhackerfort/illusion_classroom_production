@@ -1,0 +1,198 @@
+.video-settings-page {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  padding: 24px;
+  color: #000;
+  overflow: auto;
+}
+
+.settings-row {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.settings-title {
+  font-size: 18px;
+  font-weight: 600;
+  padding-left: 0;
+  color: #000;
+}
+
+.settings-description {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.5);
+  padding-left: 12px;
+  margin-top: 4px;
+}
+
+.control-panel-container {
+  background-color: #f9f9f9;
+  border-radius: 16px;
+  padding: 24px;
+  margin-top: 20px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.control-panel {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 40px;
+}
+
+.control-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.slider-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #000;
+  margin-bottom: 8px;
+}
+
+/* Modern Vertical Sliders */
+.slider.vertical {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100px;
+  height: 8px;
+  transform: rotate(-90deg);
+  background: linear-gradient(to right, #eee, #ccc);
+  border-radius: 6px;
+  outline: none;
+  cursor: pointer;
+}
+
+.slider.vertical::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  background: #333;
+  border: 2px solid white;
+  border-radius: 50%;
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.3);
+}
+
+.slider.vertical::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  background: #333;
+  border: 2px solid white;
+  border-radius: 50%;
+}
+
+.slider.vertical::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  background: #333;
+  border: 2px solid white;
+  border-radius: 50%;
+}
+
+/* Toggles */
+.horizontal-toggle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.toggle-switch,
+.rainbow-toggle {
+  position: relative;
+  display: inline-block;
+  width: 60px;
+  height: 34px;
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+
+.toggle-switch input,
+.rainbow-toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider-toggle,
+.rainbow-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 34px;
+  transition: 0.4s;
+}
+
+.slider-toggle {
+  background-color: #ccc;
+}
+
+.slider-toggle::before,
+.rainbow-slider::before {
+  content: "";
+  position: absolute;
+  height: 26px;
+  width: 26px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  border-radius: 50%;
+  transition: 0.4s;
+}
+
+.toggle-switch input:checked + .slider-toggle {
+  background-color: #4caf50;
+}
+
+.toggle-switch input:checked + .slider-toggle::before {
+  transform: translateX(26px);
+}
+
+/* Rainbow Toggle Specific */
+.rainbow-slider {
+  background: linear-gradient(
+    45deg,
+    red,
+    orange,
+    yellow,
+    green,
+    blue,
+    indigo,
+    violet
+  );
+}
+
+.rainbow-toggle input:checked + .rainbow-slider::before {
+  transform: translateX(26px);
+}
+
+.toggle-label {
+  margin-top: 6px;
+  font-size: 13px;
+  color: #000;
+  max-width: 100px;
+  text-align: center;
+}
+.slider-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 120px;
+  width: 40px;
+  position: relative;
+}
+
+.slider.vertical {
+  transform: rotate(-90deg);
+  width: 100px;
+  height: 8px;
+}

@@ -1,0 +1,52 @@
+.shortq-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.shortq-input {
+  width: 80%;
+  max-width: 600px;
+  padding: 16px 20px;
+  font-size: 18px;
+  border-radius: 12px;
+  border: 1px solid #ccc;
+  background-color: #ffffff;
+  color: #333;
+  outline: none;
+  transition:
+    border 0.2s ease,
+    box-shadow 0.2s ease;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+}
+
+.shortq-input::placeholder {
+  color: #888;
+}
+
+.shortq-input:focus {
+  border-color: #999;
+  box-shadow: 0 0 0 3px rgba(100, 100, 255, 0.1);
+}
+
+.shortq-answer-display {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #222;
+  color: white;
+  padding: 10px 15px;
+  border-radius: 8px;
+  margin-top: 12px; /* ⬅️ pushes it slightly down */
+}
+
+.shortq-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+}
+
+.shortq-answer-text {
+  font-size: 16px;
+}

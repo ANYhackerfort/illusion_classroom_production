@@ -1,0 +1,22 @@
+.resize-edge {
+  position: absolute;
+  top: 0;
+  width: 6px;
+  height: 100%;
+  background: transparent;
+  z-index: 1000;
+}
+
+.resize-edge.left,
+.resize-edge.right {
+  cursor: default;
+}
+
+/* Show resize cursor only on hover */
+.resize-edge.left:hover,
+.resize-edge.right:hover {
+  cursor: ew-resize;
+}
+.resize-edge:hover {
+  background: rgba(0, 0, 0, 0.1); /* temporary to debug */
+}

@@ -1,0 +1,25 @@
+.video-carousel-wrapper {
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+  padding: 12px;
+  scroll-behavior: smooth;
+  background-color: #948979; /* white background */
+  border-radius: 12px; /* smooth rounded corners */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); /* soft shadow for depth */
+}
+
+/* Scrollbar styling */
+.video-carousel-wrapper::-webkit-scrollbar {
+  height: 6px;
+}
+
+.video-carousel-wrapper::-webkit-scrollbar-thumb {
+  background-color: rgba(30, 30, 30, 0.15); /* subtle dark thumb */
+  border-radius: 3px;
+}
+
+.video-carousel-track {
+  display: flex;
+  gap: 16px;
+}

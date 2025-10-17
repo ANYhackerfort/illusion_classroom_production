@@ -1,0 +1,65 @@
+.bot-card {
+  max-width: 300px;
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  position: relative;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+  overflow: hidden;
+}
+
+.bot-card:hover {
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.15);
+}
+
+.bot-thumbnail {
+  object-fit: cover;
+}
+
+.bot-content {
+  padding: 16px;
+}
+
+.bot-name {
+  text-align: center;
+  font-weight: bold;
+  margin-bottom: 12px;
+}
+
+.edit-btn {
+  margin-top: 12px !important;
+  background-color: #333 !important;
+  color: #fff !important;
+  font-weight: bold !important;
+  text-transform: none !important;
+  border-radius: 8px !important;
+}
+
+.edit-btn:hover {
+  background-color: #444 !important;
+}
+
+/* 🗑️ Delete button styling */
+.delete-btn-wrapper {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 10;
+}
+
+.delete-btn {
+  background: none;
+  border: none;
+  color: #333;
+  font-size: 20px;
+  font-weight: bold;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.2s ease;
+}
+
+.delete-btn:hover {
+  color: red;
+}

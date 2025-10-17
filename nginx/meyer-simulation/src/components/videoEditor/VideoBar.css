@@ -1,0 +1,220 @@
+.video-bar-container {
+  width: 100%;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.video-slider-container {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.video-outer-bar {
+  width: 100%;
+  height: 205px;
+  background-color: #000;
+  border-radius: 12px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  box-sizing: border-box;
+  gap: 12px;
+}
+
+.video-icon-box {
+  background-color: #222;
+  color: white;
+  width: 48px;
+  height: 100%;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.video-inner-bar-wrapper {
+  height: 100%;
+  position: relative;
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+  display: block;
+  width: 100%;
+
+  /* Scrollbar styling */
+  scrollbar-width: auto; /* Firefox */
+  scrollbar-color: #686868 transparent; /* optional: color for track/thumb */
+}
+
+.video-inner-bar-wrapper::-webkit-scrollbar {
+  height: 6px;
+}
+
+.video-inner-bar-wrapper::-webkit-scrollbar-thumb {
+  background: #686868;
+  border-radius: 4px;
+}
+
+.video-inner-bar-wrapper::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Chrome, Safari, Edge (WebKit browsers) */
+.video-inner-bar-wrapper::-webkit-scrollbar {
+  height: 2px;
+}
+
+.video-inner-bar-wrapper::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.video-inner-bar-wrapper::-webkit-scrollbar-thumb {
+  background-color: #686868;
+  border-radius: 4px;
+}
+
+.segment {
+  height: 100%;
+  display: inline-block;
+  background-color: #273f4f;
+}
+.segment + .segment {
+  margin-left: 0px;
+}
+
+.question-segment.easy {
+  background-color: #93da97;
+}
+.question-segment.medium {
+  background-color: #fe7743;
+}
+.question-segment.hard {
+  background-color: #dc3c22;
+}
+
+.split-left {
+  background-color: #ccc;
+  animation: splitLeft 0.2s ease forwards;
+  border-top-right-radius: 6px;
+  border-bottom-right-radius: 6px;
+}
+
+.split-right {
+  background-color: #bbb;
+  animation: splitRight 0.2s ease forwards;
+  border-top-left-radius: 6px;
+  border-bottom-left-radius: 6px;
+}
+
+@keyframes splitLeft {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-4px);
+  }
+}
+
+@keyframes splitRight {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(4px);
+  }
+}
+
+.video-inner-bar {
+  display: flex;
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 100%;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.video-inner-left {
+  background-color: #00adb5;
+  height: 100%;
+  border-radius: 8px 0 0 8px;
+}
+
+.video-inner-right {
+  background-color: #007d82;
+  height: 100%;
+  border-radius: 0 8px 8px 0;
+}
+
+.needle {
+  position: absolute;
+  top: 0;
+  width: 4px;
+  height: 100%;
+  background-color: white;
+  cursor: ew-resize;
+  border-radius: 2px;
+  z-index: 2;
+
+  pointer-events: none;
+}
+
+.zoom-label {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.5); /* muted gray-black */
+}
+
+.video-slider-container input[type="range"] {
+  appearance: none;
+  height: 6px;
+  background: #888; /* gray track */
+  border-radius: 4px;
+  outline: none;
+}
+
+/* Webkit browsers */
+.video-slider-container input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 10px;
+  height: 16px;
+  background-color: #000; /* black thumb */
+  border-radius: 4px;
+  cursor: pointer;
+  transform: rotate(180deg); /* flip upward */
+}
+
+/* Firefox */
+.video-slider-container input[type="range"]::-moz-range-thumb {
+  width: 10px;
+  height: 16px;
+  background-color: #000;
+  border-radius: 4px;
+  cursor: pointer;
+  transform: rotate(180deg);
+}
+
+.video-tick {
+  position: absolute;
+  width: 1px;
+  height: 50%;
+  background-color: white; /* Dark gray for better contrast */
+  z-index: 2;
+  will-change: left;
+}
+
+.video-tick-label {
+  z-index: 3;
+  font-size: 9px;
+  font-weight: 500;
+  color: #ddd; /* Light gray for dark themes */
+  margin-top: 4px;
+  margin-left: 6px;
+  white-space: nowrap;
+  text-shadow: 0 0 2px rgba(0, 0, 0, 0.7); /* Adds clarity over video bg */
+  will-change: left;
+}

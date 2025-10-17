@@ -1,0 +1,28 @@
+.mic--add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f2f4f7;
+  border: 2px dashed #cbd5e1;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  min-height: 200px;
+}
+
+.mic--add:hover {
+  background-color: #e2e8f0;
+}
+
+.mic__addIconWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
+}
+
+.mic__addIcon {
+  font-size: 64px;
+  color: #64748b;
+}

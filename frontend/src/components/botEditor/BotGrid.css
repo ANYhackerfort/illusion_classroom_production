@@ -1,0 +1,66 @@
+.bot-grid-container {
+  position: relative;
+  max-width: 100%;
+  box-sizing: border-box;
+  border-radius: 12px;
+  background: #393e46;
+  user-select: none;
+  padding: var(--gap, 12px);
+
+  /* scroll behavior */
+  overflow-y: auto; /* vertical scroll when grid is taller */
+  overflow-x: hidden; /* no horizontal scroll */
+}
+
+/* Modern rounded scrollbar */
+/* Chrome/Edge/Safari */
+.bot-grid-container::-webkit-scrollbar {
+  width: 10px;
+}
+.bot-grid-container::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 4px; /* space at top/bottom of track */
+}
+.bot-grid-container::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 999px; /* pill */
+  border: 2px solid transparent;
+  background-clip: content-box; /* visually slimmer thumb */
+}
+.bot-grid-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.35);
+  background-clip: content-box;
+}
+
+/* Firefox */
+.bot-grid-container {
+  scrollbar-width: thin; /* slim */
+  scrollbar-color: rgba(0, 0, 0, 0.35) transparent; /* thumb, track */
+}
+
+.bot-grid {
+  display: grid;
+  gap: var(--gap, 12px);
+  width: 100%;
+  /* allow height to grow so container scrolls */
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(var(--minCardWidth, 220px), 1fr)
+  );
+  align-content: start;
+}
+
+.bot-grid-resize-handle {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  width: 16px;
+  height: 16px;
+  cursor: nwse-resize;
+  border-right: 3px solid #999;
+  border-bottom: 3px solid #999;
+  border-radius: 2px;
+  opacity: 0.9;
+  pointer-events: auto;
+  z-index: 100; /* above scrolled content */
+}

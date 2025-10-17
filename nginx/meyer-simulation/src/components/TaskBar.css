@@ -1,0 +1,67 @@
+.left-taskbar-container {
+  width: 290px;
+  background-color: #1e1e1e;
+  display: flex;
+  flex-direction: column;
+  padding: 10px 0;
+  height: 100vh;
+  box-sizing: border-box;
+  overflow-y: auto;
+}
+
+.left-taskbar-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.left-taskbar-container::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+.taskbar-buttons-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.left-taskbar-button {
+  width: 40px;
+  height: 40px;
+  background-color: #333;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  margin: 0 auto;
+}
+
+.left-taskbar-button:hover {
+  background-color: #555;
+}
+
+.taskbar-divider {
+  height: 1px;
+  background-color: rgba(255, 255, 255, 0.2); /* subtle modern white line */
+  margin: 16px 0;
+}
+
+.section-label {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.4);
+  margin: 16px 0 8px 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.taskbar-heading {
+  font-size: 17px;
+  font-weight: 600;
+  color: #eaeaea;
+  text-align: left;
+  background-color: #1f1f1f;
+  padding: 14px 20px;
+  border-radius: 10px;
+  margin: 20px 12px 12px;
+  width: calc(100% - 24px); /* full width minus margin */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  letter-spacing: 0.3px;
+}

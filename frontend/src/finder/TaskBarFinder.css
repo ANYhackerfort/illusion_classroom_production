@@ -1,0 +1,59 @@
+.finder-taskbar-container {
+  width: 26%;
+  min-width: 160px;
+  max-width: 190px;
+  background-color: #eeeeee; /* solid light gray */
+  display: flex;
+  flex-direction: column;
+  padding: 10px 4px;
+  height: 100%;
+  box-sizing: border-box;
+  overflow-y: auto;
+  border-right: 1px solid #cccccc;
+  color: white;
+}
+
+.finder-taskbar-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.finder-taskbar-container::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+.finder-taskbar-buttons-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.finder-taskbar-button {
+  width: 40px;
+  height: 40px;
+  background-color: white;
+  color: black;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  cursor: pointer;
+  margin: 0 auto;
+  transition: background-color 0.2s ease;
+}
+
+.finder-taskbar-button:hover {
+  background-color: #ddd;
+}
+
+.finder-taskbar-divider {
+  height: 1px;
+  background-color: #cccccc;
+  margin: 16px 0;
+}
+
+.finder-taskbar-section-label {
+  font-size: 12px;
+  color: #333;
+  margin: 16px 0 8px 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}

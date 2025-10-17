@@ -1,0 +1,118 @@
+.liquid-glass-grid {
+  position: relative;
+  border-radius: 16px;
+  backdrop-filter: blur(20px);
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+  user-select: none;
+  --gap: 4px;
+  --minCardWidth: 200px;
+  padding: var(--gap);
+  will-change: transform;
+  transition: box-shadow 0.3s ease;
+}
+
+.liquid-glass-grid::-webkit-scrollbar {
+  width: 8px;
+}
+.liquid-glass-grid::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+}
+.liquid-glass-grid::-webkit-scrollbar-track {
+  background: transparent;
+}
+.liquid-glass-grid {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+.grid-scroll {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.grid-inner {
+  display: grid;
+  gap: var(--gap);
+  grid-template-columns: repeat(auto-fit, minmax(var(--minCardWidth), 1fr));
+  align-content: start;
+  width: 100%;
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 16px;
+  overflow: hidden;
+  backdrop-filter: blur(12px);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.glass-card:hover {
+  transform: scale(1.03);
+  box-shadow: 0 6px 20px rgba(255, 255, 255, 0.15);
+}
+
+.card-img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.resize-handle {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  width: 16px;
+  height: 16px;
+  cursor: nwse-resize;
+  border-right: 3px solid rgba(255, 255, 255, 0.4);
+  border-bottom: 3px solid rgba(255, 255, 255, 0.4);
+  border-radius: 3px;
+  opacity: 0.9;
+  pointer-events: auto;
+  z-index: 10;
+}
+
+.interaction-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: auto;
+}
+
+.local-video-wrapper {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 16px;
+  overflow: hidden;
+  backdrop-filter: blur(12px);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  position: relative;
+}
+.local-label {
+  position: absolute;
+  top: 8px;
+  left: 12px;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 2px 6px;
+  font-size: 12px;
+  color: white;
+  border-radius: 4px;
+  z-index: 1;
+}
+
+.local-camera-preview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}

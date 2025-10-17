@@ -1,0 +1,33 @@
+.photo-card {
+  display: inline-block; /* Allow multiple PhotoCards to sit side by side */
+  margin: 8px; /* Add spacing between PhotoCards */
+}
+
+.photo-item {
+  position: relative;
+  display: inline-block;
+}
+
+.photo-image {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 8px;
+  display: block; /* Ensures image doesn't have inline whitespace */
+}
+
+.photo-label {
+  position: absolute;
+  bottom: 4px;
+  left: 1px;
+  background: rgba(0, 0, 0, 0.5);
+  color: white;
+  font-size: 10px;
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+
+.no-photo-text {
+  font-size: 0.9rem;
+  color: #777;
+}

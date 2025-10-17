@@ -1,0 +1,62 @@
+.video-segment {
+  background-color: #111;
+  color: white;
+  padding: 20px;
+  margin-bottom: 10px;
+  border: 1px solid #333;
+  border-radius: 8px;
+}
+
+.live-tag {
+  margin-left: 10px;
+  color: red;
+  font-weight: bold;
+}
+
+.video-container {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  background-color: black;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
+
+.video-question-layer {
+  position: absolute;
+}
+
+
+.video-layout-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Make these components float above everything */
+.video-layout-wrapper > .liquid-glass-grid,
+.video-layout-wrapper > .mission-control {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 10;
+}
+
+.no-access-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 9999;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  backdrop-filter: blur(12px) brightness(0.8);
+  background: rgba(255, 255, 255, 0.3);
+  pointer-events: all;
+}
+

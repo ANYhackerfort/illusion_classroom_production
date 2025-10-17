@@ -1,0 +1,48 @@
+.userstats__container {
+  max-width: 600px;
+  margin: 2rem auto;
+  padding: 1.5rem;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  font-family: system-ui, sans-serif;
+}
+
+.userstats__title {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  text-align: left; /* ✅ was center */
+}
+
+.userstats__card {
+  padding: 1rem;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  background: #fafafa;
+  margin-bottom: 1.5rem;
+}
+
+.userstats__card p {
+  margin: 0.4rem 0;
+}
+
+.userstats__meetings h3 {
+  margin-bottom: 0.5rem;
+}
+
+.userstats__meetings ul {
+  list-style: none;
+  padding-left: 0;
+}
+
+.userstats__meetings li {
+  padding: 0.3rem 0;
+  border-bottom: 1px solid #eee;
+  font-size: 0.95rem;
+}
+
+.userstats__loading {
+  text-align: center;
+  padding: 2rem;
+  font-style: italic;
+}

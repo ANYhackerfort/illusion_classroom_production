@@ -1,0 +1,143 @@
+/* 🎯 DROP ZONE WRAPPER */
+.survey-drop-zone {
+  border-radius: 12px;
+  padding: 2rem;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(8px);
+  transition: background 0.3s ease;
+  cursor: pointer;
+}
+
+.survey-drop-zone:hover {
+  background: rgba(255, 255, 255, 0.75);
+}
+
+/* ℹ️ PLACEHOLDER TEXT BEFORE SURVEYS ARE LOADED */
+.placeholder-text {
+  font-size: 1rem;
+  color: #666;
+  font-style: italic;
+}
+
+/* 📜 INSTRUCTION BOX SHOWN WHEN SURVEYS NOT YET LOADED */
+.survey-instructions {
+  background: #f9f9f9;
+  padding: 0.75rem 1rem;
+  border: 1px dashed #ccc;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  color: #333;
+  text-align: left;
+}
+
+.survey-instructions ul {
+  margin: 0.5rem 0 0;
+  padding-left: 1.25rem;
+  font-size: 0.85rem;
+  color: #555;
+}
+
+/* 📦 MASONRY LAYOUT CONTAINER */
+.survey-masonry {
+  width: 100%;
+  max-width: none;
+  column-width: 260px;       /* 🧱 Try ~240–280px for good block width */
+  column-gap: 16px;          /* 🧱 Horizontal space between columns */
+  padding: 16px;
+  box-sizing: border-box;
+  text-align: left;
+}
+
+/* ▒▒▒ SURVEY BLOCK ▒▒▒ */
+/* 🧩 Each survey block (represents a whole survey!) */
+.survey-block {
+  display: block;            /* 💡 Important: switch to block */
+  break-inside: avoid;       /* 💡 Prevent column break splitting */
+  margin-bottom: 16px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #111827;
+  cursor: grab;
+  user-select: none;
+  transition: background 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
+  box-sizing: border-box;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.survey-block:hover {
+  background: #f9fafb;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.survey-block:active {
+  cursor: grabbing;
+  background: #f3f4f6;
+  transform: scale(0.97);
+}
+
+/* 🔲 Survey block content inside each box */
+.survey-block-content {
+  background: #f9fafb;
+  border-radius: 10px;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+  transition: box-shadow 0.2s ease;
+}
+
+.survey-block:hover .survey-block-content {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* 🔤 Title for each survey block */
+.survey-block-title {
+  margin: 0;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #111827;
+}
+
+/* 📝 Optional preview (10-word summary from description) */
+.survey-block-preview {
+  font-size: 0.85rem;
+  color: #555;
+  font-style: italic;
+  word-break: break-word;
+  margin-top: 0.25rem;
+  font-weight: 400;
+}
+
+/* 🎚️ For sliders inside blocks (if rendered directly — not often) */
+.survey-block-slider {
+  width: 100%;
+  margin-top: 0.5rem;
+  accent-color: #007aff;
+}
+
+/* 🔘 List of MCQ preview options */
+.survey-block-options {
+  list-style: disc inside;
+  padding-left: 0.5rem;
+  margin: 0.25rem 0 0;
+  font-size: 0.85rem;
+  color: #374151;
+  font-weight: 400;
+}
+
+/* 🧾 UL used in SurveyBlock to preview item types */
+.survey-summary-list {
+  list-style: disc;
+  padding-left: 1rem;
+  margin: 0;
+  font-size: 0.85rem;
+  color: #444;
+}

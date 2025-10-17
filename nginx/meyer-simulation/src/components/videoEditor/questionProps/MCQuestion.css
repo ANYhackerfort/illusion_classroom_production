@@ -1,0 +1,67 @@
+.mcq-wrap {
+  display: grid;
+  gap: 12px;
+}
+
+.mcq-topline {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.badge {
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  text-transform: lowercase;
+}
+
+.mcq-answers {
+  display: grid;
+  gap: 10px;
+}
+
+.mcq-answer-box {
+  position: relative;
+  background: #eeeeee;
+  border-radius: 8px;
+  padding: 12px;
+  cursor: pointer;
+  overflow: hidden;
+  min-height: 48px;
+  border: 1px solid #ccc;
+  box-shadow: 2px 4px 6px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
+.mcq-answer-box:hover {
+  border: 1px solid #3f51b5;
+  box-shadow: 3px 6px 12px rgba(0, 0, 0, 0.2);
+  transform: translateY(-2px);
+}
+
+.mcq-answer-text {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.mcq-avatars-right {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: row-reverse;
+  gap: 4px;
+  right: 8px;
+}
+
+.mcq-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  position: absolute;
+}

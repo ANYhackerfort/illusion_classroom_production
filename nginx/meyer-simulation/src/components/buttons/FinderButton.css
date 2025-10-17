@@ -1,0 +1,31 @@
+.finder-button-rectangle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  border-radius: 0;
+  cursor: pointer;
+  width: 100%;
+  transition: background-color 0.2s ease;
+  border-radius: 8px;
+}
+
+.finder-button-rectangle:hover {
+  background-color: rgba(0, 0, 0, 0.05); /* subtle hover effect */
+}
+
+.finder-icon {
+  color: #007aff; /* MacOS blue */
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.finder-label {
+  color: #000000;
+  font-size: 14px;
+  font-weight: 500;
+}

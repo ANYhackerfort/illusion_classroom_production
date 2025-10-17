@@ -1,0 +1,29 @@
+[ESP] What is the largest mamal on Earth? # ESP tag is to tell it is a question
+[PSE] Kangaroo # PSE tag is to tell it's an answer
+[PSE-R] Banana # -R to signify the right answer
+[PSE] Elephant
+[PSE] Killer Whale
+
+[ESP] What is the smallest mamal on Earth?
+[PSE] Kangaroo 
+[PSE-R] Banana 
+[PSE-R] Elephant # You can do more than 1 right answer
+[PSE] Killer Whale
+
+[ESP] What is the scariest mamal on Earth? # It will automatically adjust answer boxes for you.
+[PSE] Kangaroo 
+[PSE] Banana # You can also leave none, which we will auto select it as all answers are wrong
+
+[ESP] What is the funniest thing you found in the video?
+# No answer? Then we will automatically have it as a short answer
+
+[ESP] Select the range in which is close to the price of housing in California.
+[SLIDER] 20,000 - 40,000 # SLIDER sets the left and right of SLIDER
+
+[ESP] What choices below shows the contribution of Sigmund Feud?
+[MESP] Study of dreams #MESP tag to signify multiple select
+[MSEP-R] Study of taste 
+[MSEP-R] Study of rights
+
+
+

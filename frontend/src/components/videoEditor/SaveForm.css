@@ -1,0 +1,54 @@
+.save-button {
+  background-color: #222;
+  color: white;
+  border: none;
+  border-radius: 999px;
+  padding: 10px 24px;
+  font-size: 0.95rem;
+  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  transition: background 0.2s;
+}
+
+.save-button:hover {
+  background-color: #4651b9;
+}
+
+.save-form {
+  position: fixed; /* ✅ fixed to the viewport */
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%); /* ✅ perfectly center */
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 320px; /* ⬅️ wider */
+}
+
+.save-input {
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  width: 100%;
+}
+
+.confirm-button {
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  padding: 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.confirm-button:hover {
+  background-color: #409544;
+}

@@ -1,0 +1,128 @@
+.video-question-card {
+  background-color: #fefefe;
+  border: 2px solid #ccc;
+  border-radius: 12px;
+  padding: 24px;
+  width: 100%;
+  max-width: 600px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  cursor: grab;
+  user-select: none;
+}
+
+.video-question-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.video-question-text {
+  font-size: 20px;
+  font-weight: bold;
+  color: #222;
+  flex: 1;
+}
+
+.video-question-type {
+  font-size: 14px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: #ddd;
+  margin-left: 16px;
+  text-transform: uppercase;
+  align-self: flex-start;
+}
+
+/* Answer Boxes */
+.video-answers-container {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.video-answer-box {
+  background-color: #e8f0fe;
+  padding: 18px;
+  font-size: 16px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+}
+
+/* Match type */
+.video-match-row {
+  display: flex;
+  gap: 12px;
+}
+
+.video-match-box {
+  flex: 1;
+  background-color: #fff9c4;
+  padding: 18px;
+  font-size: 16px;
+  border-radius: 8px;
+  border: 1px solid #aaa;
+}
+
+/* Rank type */
+.video-rank-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.video-rank-number {
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.video-rank-text {
+  background: #f3e5f5;
+  padding: 16px;
+  border-radius: 6px;
+  flex: 1;
+}
+
+/* Short and slider UI placeholders */
+.video-slider-ui,
+.video-short-ui {
+  height: 50px;
+  background: #f0f0f0;
+  border-radius: 8px;
+}
+
+/* AI mic style */
+.video-ai-ui {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.video-ai-mic-ring {
+  padding: 12px;
+  border-radius: 50%;
+  background: #dcedc8;
+}
+
+.video-ai-prompt {
+  font-size: 16px;
+  color: #333;
+}
+
+.video-question-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 20px;
+  padding-right: 12px;
+  font-size: 12px;
+  color: #333;
+}
+
+.footer-badge {
+  background-color: #eeeeee; /* ← visible background */
+  color: #000; /* ← visible text */
+  border-radius: 12px;
+  padding: 4px 10px;
+  font-weight: 500;
+  text-transform: capitalize;
+}

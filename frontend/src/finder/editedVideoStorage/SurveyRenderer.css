@@ -1,0 +1,122 @@
+/* SurveyRenderer.css */
+
+.survey-container {
+  max-width: 700px;
+  margin: auto 2rem;
+  padding: 0rem 2rem 2rem; /* less top padding */
+  border-radius: 1rem;
+  background-color: #f9fafb;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.survey-item {
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.survey-question,
+.survey-description {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  color: #111827;
+}
+
+.survey-description {
+  font-weight: 400;
+  color: #374151;
+}
+
+.survey-textarea {
+  width: 100%;
+  min-height: 100px;
+  padding: 0.75rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  resize: vertical;
+  transition: border-color 0.2s ease;
+}
+
+.survey-textarea:focus {
+  border-color: #2563eb;
+  outline: none;
+}
+
+.survey-slider {
+  width: 100%;
+  margin-top: 0.5rem;
+  appearance: none;
+  height: 6px;
+  border-radius: 5px;
+  background: #d1d5db;
+  outline: none;
+  transition: background 0.2s ease;
+}
+
+.survey-slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #2563eb;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.survey-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #2563eb;
+  cursor: pointer;
+}
+
+.survey-slider-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+  color: #6b7280;
+}
+
+.survey-mcq {
+  list-style: none;
+  padding-left: 0;
+}
+
+.survey-mcq li {
+  margin-bottom: 0.5rem;
+}
+
+.survey-mcq label {
+  font-size: 1rem;
+  color: #374151;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: color 0.2s ease;
+}
+
+.survey-mcq input[type="radio"] {
+  accent-color: #2563eb;
+}
+
+.survey-mcq label:hover {
+  color: #111827;
+}
+
+.survey-link {
+  color: #2563eb;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 1rem;
+  transition: text-decoration 0.2s ease;
+}
+
+.survey-link:hover {
+  text-decoration: underline;
+}
