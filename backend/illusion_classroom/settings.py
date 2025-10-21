@@ -24,8 +24,10 @@ ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "127.0.0.1,localhost").split(",")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 CSRF_TRUSTED_ORIGINS = os.getenv(
-    "CSRF_TRUSTED_ORIGINS", "http://localhost,http://127.0.0.1"
+    "CSRF_TRUSTED_ORIGINS",
+    "https://illusion-classroom.com,https://www.illusion-classroom.com"
 ).split(",")
+
 
 # ------------------------------------------------------
 # Static / Media
@@ -33,7 +35,7 @@ CSRF_TRUSTED_ORIGINS = os.getenv(
 STATIC_URL = "/static/"
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 
-MEDIA_URL = os.getenv("MEDIA_URL", "/media/")
+MEDIA_URL = os.getenv("MEDIA_URL", "https://illusion-classroom.com/media/")
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
 DATA_UPLOAD_MAX_MEMORY_SIZE = 52428800  # 50 MB upload limit
@@ -77,8 +79,9 @@ MIDDLEWARE = [
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = os.getenv(
     "CORS_ALLOWED_ORIGINS",
-    "http://localhost:5173,http://localhost:8081"
+    "https://illusion-classroom.com,https://www.illusion-classroom.com"
 ).split(",")
+
 
 # ------------------------------------------------------
 # URL / Templates
@@ -184,3 +187,8 @@ USE_TZ = True
 # Default PK Field
 # ------------------------------------------------------
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+SECURE_SSL_REDIRECT = True
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
