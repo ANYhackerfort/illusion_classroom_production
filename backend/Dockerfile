@@ -15,6 +15,7 @@ WORKDIR /app
 # ------------------------------------------------------
 # System dependencies
 # ------------------------------------------------------
+
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libpq-dev \
@@ -22,6 +23,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libmariadb-dev-compat \
     pkg-config \
     netcat-openbsd \
+    ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
 # ------------------------------------------------------
