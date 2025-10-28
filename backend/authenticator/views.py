@@ -1959,96 +1959,66 @@ def get_bot_names_and_videos(request, meeting_name):
     except Meeting.DoesNotExist:
         return JsonResponse({"error": "Meeting not found"}, status=404)
 
+@require_POST
 @csrf_exempt
-def add_participant(request, meeting_name):
-    """
-    POST (multipart/form-data):
-      - name: str (required)
-      - participant_email: str (required)
-      - owner_email: str (required) -> must match meeting.owner.email
-      - picture: file (optional)
-      - answers: JSON array (optional)
-    """
-    if request.method != "POST":
-        print("❌ Rejected non-POST request")
-        return JsonResponse({"error": "Only POST requests are allowed."}, status=405)
-
+def join_room(request, org_id, meeting_name):
+    COOKIE_MAX_AGE = 12 * 60 * 60  # 12 hours in seconds
     try:
-        print(f"🔍 Incoming request to add participant to meeting: {meeting_name}")
-        meeting = Meeting.objects.filter(name=meeting_name).first()
+        body = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({"ok": False, "message": "Invalid JSON body."}, status=400)
 
-        if not meeting:
-            print(f"❌ Meeting not found: {meeting_name}")
-            return JsonResponse({"error": "Meeting not found."}, status=404)
+    owner_email = (body.get("owner_email") or "").strip().lower()
+    name = (body.get("name") or "").strip()
 
-        owner_email = (meeting.owner.email or "").lower()
-        incoming_owner_email = (request.POST.get("owner_email") or "").lower()
-        print(f"🔐 Validating owner email: expected {owner_email}, got {incoming_owner_email}")
+    if not owner_email or not name:
+        return JsonResponse({
+            "ok": False,
+            "message": "Missing required fields: owner_email or name."
+        }, status=400)
 
-        if incoming_owner_email != owner_email:
-            print("❌ Owner email mismatch")
-            return JsonResponse(
-                {"error": "Access denied: owner email mismatch."},
-                status=403,
-            )
+    # ✅ Manual org + meeting lookup
+    org = Organization.objects.filter(id=org_id).first()
+    if org is None:
+        return JsonResponse({"ok": False, "message": "Organization not found."}, status=404)
 
-        # Get participant info
-        participant_email = request.POST.get("participant_email")
-        name = request.POST.get("name")
-        picture = request.FILES.get("picture")
+    meeting = Meeting.objects.filter(organization=org, name=meeting_name).first()
+    if meeting is None:
+        return JsonResponse({"ok": False, "message": "Meeting not found."}, status=404)
 
-        print(f"📥 Received participant info:")
-        print(f"   - Name: {name}")
-        print(f"   - Email: {participant_email}")
-        print(f"   - Picture: {'✅ Yes' if picture else '❌ No'}")
+    # ✅ Email match check
+    actual_email = (meeting.owner.email or "").strip().lower()
+    if actual_email != owner_email:
+        return JsonResponse({
+            "ok": False,
+            "message": "Owner email does not match meeting owner."
+        }, status=403)
 
-        if not participant_email or not name:
-            print("❌ Missing required participant info")
-            return JsonResponse({"error": "Missing 'participant_email' or 'name'."}, status=400)
+    # ✅ Compose Redis key from name
+    safe_name = name.lower().replace(" ", "_")
+    redis_key = f"join_room:{org_id}:{meeting_name}:{safe_name}"
 
-        # Parse answers if any
-        answers_raw = request.POST.get("answers")
-        try:
-            answers = json.loads(answers_raw) if answers_raw else []
-            print(f"🧠 Answers parsed: {answers}")
-        except Exception as parse_err:
-            print(f"⚠️ Failed to parse answers JSON: {parse_err}")
-            answers = []
+    # ✅ Cache for 12 hours
+    cache.set(redis_key, True, timeout=COOKIE_MAX_AGE)
 
-        # Check if participant already exists
-        participant = Participant.objects.filter(meeting=meeting, email=participant_email).first()
-        if participant:
-            print(f"🔁 Updating existing participant: {participant_email}")
-        else:
-            print(f"🆕 Creating new participant: {participant_email}")
-            participant = Participant(meeting=meeting, email=participant_email)
+    # ✅ JSON response
+    response = JsonResponse({
+        "ok": True,
+        "message": "Access verified and stored for 12 hours.",
+    })
 
-        participant.name = name
-        participant.answers = answers
-        if picture:
-            participant.picture = picture
+    # ✅ Secure HttpOnly cookie
+    response.set_cookie(
+        key=f"join_auth_{org_id}_{meeting_name}",
+        value=safe_name,
+        max_age=COOKIE_MAX_AGE,
+        httponly=True,
+        secure=True,
+        samesite="Lax",
+        path="/",
+    )
 
-        participant.save()
-        print(f"✅ Participant saved successfully (ID: {participant.id})")
-
-        return JsonResponse(
-            {
-                "message": "Participant saved (overwritten if existed).",
-                "participant": {
-                    "id": participant.id,
-                    "name": participant.name,
-                    "email": participant.email,
-                    "answers": participant.answers,
-                    "picture_url": participant.picture.url if participant.picture else None,
-                    "created_at": participant.created_at.isoformat(),
-                },
-            },
-            status=200,
-        )
-
-    except Exception as e:
-        print(f"❌ Server error: {e}")
-        return JsonResponse({"error": str(e)}, status=500)
+    return response
 
 @csrf_exempt
 def get_meeting_owner(request, org_id, meeting_name):
@@ -3399,7 +3369,6 @@ def pause_video_state(request, org_id, room_name):
         print(f"❌ Error in pause_video_state: {e}")
         return JsonResponse({"error": str(e)}, status=500)
     
-@login_required
 @csrf_exempt
 def get_active_meeting_with_segments(request, org_id, room_name):
     """

@@ -280,7 +280,7 @@ const VideoSegmentRenderer: React.FC = () => {
 
   return (
     <div className="video-layout-wrapper">
-      <LiquidGlassBotGrid />
+      <LiquidGlassBotGrid/>
       <div className="video-container">
         {adminAccess && <MissionControl />}
 
@@ -288,6 +288,7 @@ const VideoSegmentRenderer: React.FC = () => {
           <div className="no-access-overlay">
             <NoAccessJoinGate
               onAccessGranted={() => setParticipantAccess(true)}
+              orgId={orgIdNum}
             />
           </div>
         )}

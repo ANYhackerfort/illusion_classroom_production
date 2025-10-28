@@ -1,123 +1,122 @@
-.no-access-form-container {
+/* === Layout Container === */
+.join-access-container {
   display: flex;
-  align-items: center;
   justify-content: center;
-  width: 100%;
-  height: 100%;
+  align-items: center;
+  height: 100vh;
+  background: transparent;
 }
 
-.dark-box {
-  background: rgba(20, 20, 20, 0.95);
-  color: #f1f1f1;
-  padding: 32px;
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-  width: 340px;
+/* === Panel Card === */
+.join-access-card {
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  background: rgba(255, 255, 255, 0.78);
+  border-radius: 20px;
+  padding: 50px 60px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+  width: 440px;
+  max-width: 90%;
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  text-align: center;
+  align-items: center;
   animation: fadeIn 0.4s ease;
 }
 
-.dark-box h2 {
-  font-size: 22px;
-  color: #ffffff;
-}
-
-.dark-box p {
-  font-size: 15px;
-  color: #d0d0d0;
-}
-
-.dark-box input[type="text"],
-.dark-box input[type="email"],
-.dark-box input[type="file"] {
-  padding: 10px;
-  border: none;
-  border-radius: 6px;
-  background: #2a2a2a;
-  color: #ffffff;
-  font-size: 14px;
-}
-
-.dark-box input::placeholder {
-  color: #999;
-}
-
-.dark-box button {
-  padding: 10px;
-  background: #007bff;
-  color: white;
-  border: none;
-  border-radius: 6px;
+/* === Text Content === */
+.join-access-title {
+  font-size: 30px;
   font-weight: bold;
-  cursor: pointer;
-  transition: background 0.2s;
+  margin-bottom: 12px;
+  color: #222;
 }
 
-.dark-box button:hover {
-  background: #0056b3;
+.join-access-subtext {
+  font-size: 15px;
+  color: #444;
+  margin-bottom: 30px;
+  text-align: center;
+  opacity: 0.9;
+  line-height: 1.4;
 }
 
-.error {
-  color: #ff4d4f;
-  font-size: 13px;
+/* === Input Fields === */
+
+
+.MuiOutlinedInput-root {
+  border-radius: 10px !important;
 }
 
-.fade-out {
-  animation: fadeOut 0.6s ease forwards;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-@keyframes fadeOut {
-  to {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-}
-
-.camera-wrapper {
+/* === Camera Display Area === */
+.join-access-camera {
+  margin-top: 14px;
+  margin-bottom: 22px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  margin: 10px 0;
-}
-
-.camera-wrapper video {
+  gap: 12px;
   width: 100%;
-  max-width: 280px;
-  border-radius: 8px;
-  border: 2px solid #444;
 }
 
-.capture-button {
-  background: #444;
-  color: white;
-  border: none;
-  padding: 8px 14px;
-  border-radius: 6px;
+.join-access-camera video {
+  width: 100%;
+  border-radius: 10px;
+  border: 2px solid #ccc;
+  object-fit: cover;
+}
+
+/* === Buttons === */
+.join-access-button,
+.join-access-snap {
+  background: transparent;
+  border: 2px solid #222;
+  border-radius: 10px;
+  color: #222;
+  font-weight: 600;
+  padding: 12px 20px;
   cursor: pointer;
-  font-size: 14px;
-  margin-top: 5px;
+  transition: all 0.25s ease;
+  width: 100%;
+  margin-top: 10px;
 }
 
-.capture-button:hover {
-  background: #666;
+.join-access-button:hover,
+.join-access-snap:hover {
+  background: #222;
+  color: #fff;
 }
 
-.preview-text {
+/* === Alert / Error Message === */
+.join-access-alert {
+  width: 100%;
+  margin-top: 14px;
+  margin-bottom: 6px;
+}
+
+/* === Success Message === */
+.join-access-success {
+  font-size: 16px;
+  font-weight: 600;
+  color: #2e7d32;
+  margin-top: 20px;
+  text-align: center;
+}
+
+/* === Footer === */
+.join-access-footer {
   font-size: 13px;
-  color: #98ff98;
+  color: #777;
+  margin-top: 36px;
+}
+
+/* === Animation === */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

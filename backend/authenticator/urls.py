@@ -18,7 +18,6 @@ from .views import (
     store_currently_playing,
     update_bot,
     get_bot_names_and_videos,
-    add_participant,
     get_meeting_owner,
     archive_meeting,
     unarchive_meeting,
@@ -53,13 +52,15 @@ from .views import (
     get_active_meeting_with_segments,
     get_video_state,
     update_video_state,
+    join_room,
 )
 
 urlpatterns = [
     path('google-login/', google_login_view),
     
     path("get_meeting_id/<int:org_id>/<str:room_name>/", get_meeting_id, name="get_meeting_id"),
-    
+    path("join-room/<int:org_id>/<str:meeting_name>/", join_room, name="join-room"),
+
       # --- Organization routes ---
     path("organization/create/", create_organization, name="create_organization"),
     path("organization/<int:org_id>/join/", join_organization, name="join_organization"),
@@ -95,7 +96,6 @@ urlpatterns = [
 
     path("update_bot/<str:meeting_name>/", update_bot, name="update_bot"),
     path("get_bot_names_and_videos/<str:meeting_name>/", get_bot_names_and_videos),
-    path("add_participant/<str:meeting_name>/", add_participant),
     
     path("get_meeting_owner/<int:org_id>/<str:meeting_name>/", get_meeting_owner, name="get_meeting_owner"),
     path("check_access/<int:org_id>/<str:meeting_id>/", check_meeting_access, name="check_meeting_access"),

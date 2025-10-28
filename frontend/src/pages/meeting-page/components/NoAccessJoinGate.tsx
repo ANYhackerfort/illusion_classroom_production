@@ -1,18 +1,14 @@
 import React, { useState, useRef, useEffect } from "react";
-import "./NoAccessJoinGate.css";
 import { useParams } from "react-router-dom";
-import { addParticipant } from "../../api/meetingApi";
+import { joinRoom } from "../../api/meetingApi";
+import { Box, TextField, Typography, Alert, Button, Paper } from "@mui/material";
 
-type NoAccessJoinGateProps = {
-  onAccessGranted?: () => void;
-};
-
-const NoAccessJoinGate: React.FC<NoAccessJoinGateProps> = ({
+const NoAccessJoinGate: React.FC<{ orgId: number; onAccessGranted?: () => void }> = ({
+  orgId,
   onAccessGranted,
 }) => {
   const { roomName } = useParams();
   const [name, setName] = useState("");
-  const [participantEmail, setParticipantEmail] = useState("");
   const [ownerEmail, setOwnerEmail] = useState("");
   const [pictureBlob, setPictureBlob] = useState<Blob | null>(null);
   const [submitted, setSubmitted] = useState(false);
@@ -20,140 +16,211 @@ const NoAccessJoinGate: React.FC<NoAccessJoinGateProps> = ({
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
+  // 🎥 Camera access
   useEffect(() => {
     const getCamera = async () => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: true,
-        });
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-        }
-      } catch (err) {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        if (videoRef.current) videoRef.current.srcObject = stream;
+      } catch {
         setError("Unable to access webcam.");
-        console.error(err);
       }
     };
     getCamera();
   }, []);
 
+  // 📸 Capture photo
   const handleCapture = () => {
     if (!canvasRef.current || !videoRef.current) return;
-    const context = canvasRef.current.getContext("2d");
-    if (!context) return;
-
+    const ctx = canvasRef.current.getContext("2d");
+    if (!ctx) return;
     const width = videoRef.current.videoWidth;
     const height = videoRef.current.videoHeight;
     canvasRef.current.width = width;
     canvasRef.current.height = height;
-
-    context.drawImage(videoRef.current, 0, 0, width, height);
+    ctx.drawImage(videoRef.current, 0, 0, width, height);
     canvasRef.current.toBlob((blob) => {
-      if (blob) setPictureBlob(blob);
+      if (blob) {
+        setPictureBlob(blob);
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          if (reader.result) localStorage.setItem("capturedPhoto", reader.result.toString());
+        };
+        reader.readAsDataURL(blob);
+      }
     }, "image/jpeg");
   };
 
+  // 🚀 Submit join request
   const handleSubmit = async () => {
-    if (!roomName) return;
-    if (!name || !participantEmail || !ownerEmail || !pictureBlob) {
-      setError("All fields are required.");
-      return;
-    }
+    if (!roomName) return setError("Meeting name missing from URL.");
+    if (!name || !ownerEmail) return setError("Please fill in all fields.");
 
     try {
-      const file = new File([pictureBlob], "picture.jpg", {
-        type: "image/jpeg",
-      });
-
-      await addParticipant(roomName, {
-        name,
-        participantEmail,
-        ownerEmail,
-        picture: file,
-      });
-
-      // ✅ Cache the participant email in localStorage
-      localStorage.setItem("currentUserEmail", participantEmail);
-
+      await joinRoom(orgId, roomName, { ownerEmail, name });
+      localStorage.setItem("participantName", name);
       setSubmitted(true);
-      console.log("✅ Participant registered successfully");
-
-      if (onAccessGranted) {
-        onAccessGranted();
-      }
+      if (onAccessGranted) onAccessGranted();
     } catch (err: any) {
-      console.error("❌ Failed to register participant:", err);
-
-      if (err.response && err.response.data) {
-        // If backend sends { "error": "message" }
-        if (typeof err.response.data === "object" && err.response.data.error) {
-          setError(err.response.data.error);
-        } else if (typeof err.response.data === "string") {
-          setError(err.response.data);
-        } else {
-          setError(JSON.stringify(err.response.data));
-        }
-      } else if (err.message) {
-        setError(err.message);
-      } else {
-        setError("Unknown error occurred.");
-      }
+      if (err.response?.data?.message) setError(err.response.data.message);
+      else setError("Unable to verify access.");
     }
   };
 
   return (
-    <div className="no-access-form-container">
-      <div className={`dark-box ${submitted ? "fade-out" : ""}`}>
+    <Box
+      sx={{
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        height: "100vh",
+        background: "transparent",
+      }}
+    >
+      <Paper
+        elevation={6}
+        sx={{
+          backdropFilter: "blur(20px) saturate(180%)",
+          background: "rgba(255, 255, 255, 0.78)",
+          borderRadius: "20px",
+          p: "48px 56px",
+          width: "440px",
+          maxWidth: "90%",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+        }}
+      >
         {!submitted ? (
           <>
-            <h2>Request Access</h2>
-            <p>Please enter your information to join this meeting.</p>
+            <Typography sx={{ fontSize: 28, fontWeight: 700, mb: 1, color: "#222" }}>
+              Join a Meeting
+            </Typography>
+            <Typography
+              sx={{
+                fontSize: 15,
+                color: "#444",
+                mb: 3,
+                textAlign: "center",
+                opacity: 0.9,
+                lineHeight: 1.5,
+              }}
+            >
+              Enter your name and the meeting owner’s email to verify access.
+            </Typography>
 
-            <input
-              type="text"
-              placeholder="Your Name"
+            {/* Input Fields */}
+            <TextField
+              label="Your Name"
+              variant="outlined"
+              fullWidth
               value={name}
               onChange={(e) => setName(e.target.value)}
+              sx={{ mb: 3 }}
             />
 
-            <input
-              type="email"
-              placeholder="Your Email"
-              value={participantEmail}
-              onChange={(e) => setParticipantEmail(e.target.value)}
-            />
-
-            <input
-              type="email"
-              placeholder="Verification Email (Meeting Owner)"
+            <TextField
+              label="Meeting Owner Email"
+              variant="outlined"
+              fullWidth
               value={ownerEmail}
               onChange={(e) => setOwnerEmail(e.target.value)}
+              sx={{ mb: 4 }}
             />
 
-            <div className="camera-wrapper">
-              <video ref={videoRef} autoPlay muted playsInline />
+            {/* Camera Section */}
+            <Box
+              sx={{
+                mt: 1,
+                mb: 3,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                width: "100%",
+              }}
+            >
+              <video
+                ref={videoRef}
+                autoPlay
+                muted
+                playsInline
+                style={{
+                  width: "100%",
+                  borderRadius: "10px",
+                  border: "2px solid #ccc",
+                  objectFit: "cover",
+                }}
+              />
               <canvas ref={canvasRef} style={{ display: "none" }} />
-              <button
-                type="button"
-                className="capture-button"
+              <Button
                 onClick={handleCapture}
+                variant="outlined"
+                sx={{
+                  mt: 2,
+                  borderColor: "#222",
+                  color: "#222",
+                  borderRadius: "10px",
+                  textTransform: "none",
+                  fontWeight: 600,
+                  "&:hover": { backgroundColor: "#222", color: "#fff" },
+                }}
               >
-                Take Photo
-              </button>
-              {pictureBlob && <p className="preview-text">✅ Photo captured</p>}
-            </div>
+                Snap Picture
+              </Button>
+              {pictureBlob && (
+                <Typography sx={{ fontSize: "0.9rem", color: "#333", mt: 1 }}>
+                  ✅ Photo saved locally
+                </Typography>
+              )}
+            </Box>
 
-            {error && <div className="error">{error}</div>}
-            <button onClick={handleSubmit}>Submit</button>
+            {error && (
+              <Alert severity="error" sx={{ width: "100%", mb: 2 }}>
+                {error}
+              </Alert>
+            )}
+
+            {/* Submit Button */}
+            <Button
+              onClick={handleSubmit}
+              variant="outlined"
+              fullWidth
+              sx={{
+                border: "2px solid #222",
+                borderRadius: "10px",
+                color: "#222",
+                fontWeight: 600,
+                py: 1.2,
+                textTransform: "none",
+                "&:hover": { backgroundColor: "#222", color: "#fff" },
+              }}
+            >
+              JOIN ROOM
+            </Button>
+
+            <Typography sx={{ fontSize: 13, color: "#777", mt: 4 }}>
+              Illusion Classroom © Richard Meyer Labs
+            </Typography>
           </>
         ) : (
           <>
-            <h2>Request Submitted</h2>
-            <p>Your access request has been received.</p>
+            <Typography sx={{ fontSize: 28, fontWeight: 700, mb: 2, color: "#222" }}>
+              Access Granted
+            </Typography>
+            <Typography
+              sx={{
+                fontSize: 16,
+                fontWeight: 600,
+                color: "#2e7d32",
+                textAlign: "center",
+              }}
+            >
+              You’re now authorized to join the meeting.
+            </Typography>
           </>
         )}
-      </div>
-    </div>
+      </Paper>
+    </Box>
   );
 };
 

@@ -243,42 +243,31 @@ export const getCurrentlyPlayingUrl = async (
   return response.data;
 };
 
-export interface AddParticipantPayload {
-  name: string;
-  participantEmail: string;
+export interface JoinRoomPayload {
   ownerEmail: string;
-  picture?: File;
-  answers?: string[];
+  name: string;
 }
 
-export const addParticipant = async (
+export const joinRoom = async (
+  orgId: number,
   meetingName: string,
-  payload: AddParticipantPayload,
+  payload: JoinRoomPayload,
 ) => {
-  const formData = new FormData();
-  formData.append("name", payload.name);
-  formData.append("participant_email", payload.participantEmail);
-  formData.append("owner_email", payload.ownerEmail);
-
-  if (payload.picture) {
-    formData.append("picture", payload.picture);
-  }
-  if (payload.answers) {
-    formData.append("answers", JSON.stringify(payload.answers));
-  }
-
   const response = await axiosClient.post(
-    `/api/auth/add_participant/${encodeURIComponent(meetingName)}/`,
-    formData,
+    `/api/auth/join-room/${orgId}/${encodeURIComponent(meetingName)}/`,
     {
-      withCredentials: true,
+      owner_email: payload.ownerEmail,
+      name: payload.name,
+    },
+    {
+      withCredentials: true, // ✅ important so Django sets the cookie
       headers: {
-        "Content-Type": "multipart/form-data",
+        "Content-Type": "application/json",
       },
     },
   );
 
-  return response.data;
+  return response.data; // ✅ returns { ok, message, redis_key }
 };
 
 // ORGANIZATIONS
