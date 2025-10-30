@@ -2,7 +2,7 @@ import axios from "axios";
 
 const axiosClient = axios.create({
   baseURL: "/",
-  withCredentials: true,
+  withCredentials: true, // allows Django to set cookies
 });
 
 // Optional: redirect to login on 401

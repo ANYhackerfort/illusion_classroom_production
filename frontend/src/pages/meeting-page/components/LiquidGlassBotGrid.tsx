@@ -1,13 +1,15 @@
 import React, { useRef, useEffect, useCallback, useState } from "react";
 import NameOverlayCardGlass from "./NameOverlayCardGlass";
+import { getActiveBotsVideoName } from "../../api/meetingApi";
+import type { ActiveBotVideo } from "../../api/meetingApi";
+import { useParams } from "react-router-dom";
+import { useMainMeetingWebSocket } from "../../../api/MainSocket";
+import MicOffRoundedIcon from "@mui/icons-material/MicOffRounded";
 import "./LiquidGlassBotGrid.css";
 
-interface Bot {
-  name: string;
-  video_url: string | null;
-}
+export const BACKEND_VIDEO_URL = "";
 
-const LiquidGlassBotGrid: React.FC = ({}) => {
+const LiquidGlassBotGrid: React.FC = () => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const sizeRef = useRef({ w: 220, h: 910 });
   const posRef = useRef({ x: 25, y: 25 });
@@ -21,26 +23,16 @@ const LiquidGlassBotGrid: React.FC = ({}) => {
     py: number;
   } | null>(null);
 
-  const [bots] = useState<Bot[]>([]);
+  const [bots, setBots] = useState<ActiveBotVideo[]>([]);
   const localVideoRef = useRef<HTMLVideoElement | null>(null);
+  const { org_id, roomName } = useParams<{ org_id: string; roomName: string }>();
+  const { socket } = useMainMeetingWebSocket();
 
-  // ✅ Fetch bots from server
-  // useEffect(() => {
-  //   getAllBotsFromServer(meetingName)
-  //     .then(({ bots }) => setBots([]]))
-  //     .catch((err) => {
-  //       console.error("Failed to fetch bots:", err);
-  //       setBots([]);
-  //     });
-  // }, [meetingName]);
-
-  // ✅ Start webcam stream for local preview
+  // 🎥 Start webcam preview
   useEffect(() => {
     const startCamera = async () => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: true,
-        });
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
         if (localVideoRef.current) {
           localVideoRef.current.srcObject = stream;
         }
@@ -48,11 +40,42 @@ const LiquidGlassBotGrid: React.FC = ({}) => {
         console.error("Error accessing webcam:", err);
       }
     };
-
     startCamera();
   }, []);
 
-  // Drag and resize logic
+  // 🔁 Fetch active bots from backend
+  const fetchActiveBots = useCallback(async () => {
+    if (!org_id || !roomName) return;
+    try {
+      const res = await getActiveBotsVideoName(Number(org_id), roomName);
+      console.log("🎬 Active bots loaded:", res.bots);
+      setBots(res.bots || []);
+    } catch (err) {
+      console.error("❌ Failed to fetch active bots:", err);
+    }
+  }, [org_id, roomName]);
+
+  // 🔔 Listen for WebSocket meeting updates
+  useEffect(() => {
+    if (!socket) return;
+    const handleMessage = async (event: MessageEvent) => {
+      const msg = JSON.parse(event.data);
+      console.log(msg, "ORG SOCKET MESSAGE");
+      if (msg.type === "meeting_state_changed") {
+        console.log("🔄 Meeting state changed, refreshing active bots...");
+        fetchActiveBots();
+      }
+    };
+    socket.addEventListener("message", handleMessage);
+    return () => socket.removeEventListener("message", handleMessage);
+  }, [socket, fetchActiveBots]);
+
+  // 🧠 Fetch bots on mount
+  useEffect(() => {
+    fetchActiveBots();
+  }, [fetchActiveBots]);
+
+  // 🖱️ Drag and resize logic
   const onPointerDown = (e: React.PointerEvent) => {
     const el = e.target as Element;
     const isHandle = el.classList.contains("resize-handle");
@@ -74,8 +97,7 @@ const LiquidGlassBotGrid: React.FC = ({}) => {
   };
 
   const onPointerMove = useCallback((e: PointerEvent) => {
-    if (!dragDataRef.current || !modeRef.current || !containerRef.current)
-      return;
+    if (!dragDataRef.current || !modeRef.current || !containerRef.current) return;
     const { sx, sy, sw, sh, px, py } = dragDataRef.current;
 
     if (modeRef.current === "resize") {
@@ -123,7 +145,7 @@ const LiquidGlassBotGrid: React.FC = ({}) => {
     >
       <div className="grid-scroll">
         <div className="grid-inner">
-          {/* ✅ Local camera preview box */}
+          {/* 🧍 Local camera preview */}
           <div className="local-video-wrapper">
             <div className="local-label">You</div>
             <video
@@ -133,32 +155,45 @@ const LiquidGlassBotGrid: React.FC = ({}) => {
               playsInline
               className="local-camera-preview"
             />
+
+            {/* 🔇 Mic-off badge for self */}
+            <div
+              style={{
+                position: "absolute",
+                top: 8,
+                right: 8,
+                backgroundColor: "rgba(255, 0, 0, 0.85)",
+                borderRadius: "50%",
+                width: 24,
+                height: 24,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                boxShadow: "0 0 6px rgba(0,0,0,0.4)",
+              }}
+            >
+              <MicOffRoundedIcon sx={{ color: "#fff", fontSize: 16 }} />
+            </div>
           </div>
 
-          {/* ✅ Bot video cards */}
-          {bots.map((bot, i) => {
-            console.log("Bot fetched:", bot);
-            return (
-              <NameOverlayCardGlass
-                key={i}
-                name={bot.name}
-                ratio="16 / 9"
-                videoSrc={
-                  bot.video_url?.startsWith("http")
-                    ? bot.video_url
-                    : `http://localhost:8081${bot.video_url ?? ""}`
-                }
-              />
-            );
-          })}
+          {/* 🤖 Active bot videos */}
+          {bots.map((bot, i) => (
+            <NameOverlayCardGlass
+              key={i}
+              name={bot.name}
+              ratio="16 / 9"
+              muted
+              videoSrc={
+                bot.video_url?.startsWith("http")
+                  ? bot.video_url
+                  : `${BACKEND_VIDEO_URL}${bot.video_url ?? ""}`
+              }
+            />
+          ))}
         </div>
       </div>
 
-      <div
-        className="resize-handle"
-        aria-label="Resize"
-        title="Drag to resize"
-      />
+      <div className="resize-handle" aria-label="Resize" title="Drag to resize" />
     </div>
   );
 };

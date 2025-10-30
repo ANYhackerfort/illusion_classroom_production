@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -9,15 +9,16 @@ import {
   Box,
   Typography,
   Divider,
+  CircularProgress,
 } from "@mui/material";
-import { editBotOnServer } from "../interfaces/bot_drop";
-import { getBotByIdView, storeBotView } from "../interfaces/bot_view_db";
+import { editBotOnServer, generateAnswersForBot } from "../interfaces/bot_drop";
+import { useParams } from "react-router-dom";
 
 type BotEditDialogProps = {
   open: boolean;
   botId: string;
   initialMemory: string;
-  initialAnswers: string[];
+  initialAnswers: string[]; // still the flat list in Bot
   initialName: string;
   meetingName: string;
   onClose: () => void;
@@ -33,49 +34,17 @@ const BotEditDialog: React.FC<BotEditDialogProps> = ({
 }) => {
   const [name, setName] = useState<string>(initialName);
   const [memory, setMemory] = useState<string>(initialMemory);
-  const [answers, setAnswers] = useState<string>(initialAnswers.join(", "));
   const [answersArray, setAnswersArray] = useState<string[]>(initialAnswers);
-  const [position] = useState<number>(1);
   const [saving, setSaving] = useState(false);
+  const [loadingAnswers, setLoadingAnswers] = useState(false);
+  const { org_id, roomName } = useParams<{ org_id: string; roomName: string }>();
 
-  // ✅ Parse comma-separated answers
-  const handleAnswersChange = (value: string) => {
-    setAnswers(value);
-    const parsedArray = value
-      .split(",")
-      .map((answer) => answer.trim())
-      .filter((answer) => answer.length > 0);
-    setAnswersArray(parsedArray);
-  };
-
-  // ✅ Save bot both locally and to server
+  // 🧠 Save changes to backend
   const handleSave = async () => {
     setSaving(true);
     try {
-      // 1️⃣ Update on backend
-      await editBotOnServer(botId, {
-        name,
-        memory,
-        answers: answersArray,
-      });
+      await editBotOnServer(botId, Number(org_id), roomName!, memory);
       console.log("✅ Bot successfully updated on server.");
-
-      // 2️⃣ Update locally in IndexedDB
-      const existing = await getBotByIdView(botId);
-      if (existing) {
-        const updatedBot = {
-          ...existing,
-          id: String(existing.id),
-          name,
-          memory,
-          answer_select: answersArray,
-          videoThumbnail: existing.image_url, // preserve
-          video_url: existing.video_url, // preserve
-          associated_meeting_id: existing.associated_meeting_id, // preserve
-        };
-        await storeBotView(updatedBot);
-        console.log(`💾 Locally updated bot ${botId} in IndexedDB.`);
-      }
     } catch (err) {
       console.error("❌ Failed to update bot:", err);
     } finally {
@@ -84,11 +53,46 @@ const BotEditDialog: React.FC<BotEditDialogProps> = ({
     }
   };
 
+  // ⚙️ Generate new answers from backend
+  const handleGenerateAnswers = async () => {
+    setLoadingAnswers(true);
+    try {
+      const result = await generateAnswersForBot(
+        Number(botId),
+        Number(org_id),
+        roomName!,
+        memory
+      );
+
+      if (result.ok && Array.isArray(result.answers)) {
+        // backend returns [{ question, answers }]
+        // now store each question’s answers as a single string using " ||| " delimiter
+        const structured = result.answers.map((a: any) =>
+          Array.isArray(a.answers) ? a.answers.join(" ||| ") : ""
+        );
+        setAnswersArray(structured);
+        console.log("✅ Generated bot answers:", structured);
+      } else {
+        console.warn("⚠️ No answers returned from backend.");
+      }
+    } catch (err) {
+      console.error("❌ Failed to generate answers:", err);
+    } finally {
+      setLoadingAnswers(false);
+    }
+  };
+
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle>Edit Bot</DialogTitle>
 
-      <DialogContent dividers>
+      <DialogContent
+        dividers
+        sx={{
+          maxHeight: "65vh",
+          overflowY: "auto",
+        }}
+      >
         {/* 🧠 Bot Name */}
         <Box sx={{ mt: 1 }}>
           <TextField
@@ -105,9 +109,12 @@ const BotEditDialog: React.FC<BotEditDialogProps> = ({
         <Box sx={{ mt: 2 }}>
           <Box sx={{ mb: 2 }}>
             <Typography variant="body2" color="text.secondary">
-              <strong>Tip:</strong> Use the <strong>Memory</strong> field to
-              define the bot’s personality or context. Example: “You act like a
-              friendly lab assistant who helps students debug experiments.”
+              <strong>Tip:</strong> This is the bot's memory — use it to provide
+              context for generating answers. Example:{" "}
+              <em>
+                “This bot likes to get things wrong about Jupyter but gets it
+                right later in the video.”
+              </em>
             </Typography>
           </Box>
 
@@ -121,52 +128,91 @@ const BotEditDialog: React.FC<BotEditDialogProps> = ({
             multiline
             minRows={3}
           />
+
+          {/* ⚙️ Generate Button */}
+          <Box sx={{ mt: 2, display: "flex", justifyContent: "flex-start" }}>
+            <Button
+              onClick={handleGenerateAnswers}
+              variant="contained"
+              disabled={loadingAnswers}
+              startIcon={
+                loadingAnswers ? (
+                  <CircularProgress size={18} color="inherit" />
+                ) : undefined
+              }
+            >
+              {loadingAnswers ? "Generating..." : "Generate Bot Answers"}
+            </Button>
+          </Box>
         </Box>
 
         {/* Divider */}
         <Box sx={{ mt: 2, mb: 2 }}>
           <Divider>
             <Typography variant="caption" color="text.secondary">
-              OR
+              Generated answers (in order as they appear in the video)
             </Typography>
           </Divider>
         </Box>
 
-        {/* ✍️ Answers */}
-        <Box sx={{ mt: 1 }}>
-          <TextField
-            fullWidth
-            label="Answers (comma separated)"
-            value={answers}
-            onChange={(e) => handleAnswersChange(e.target.value)}
-            onKeyDown={(e) => e.stopPropagation()}
-            helperText="Separate each answer with a comma"
-          />
-        </Box>
-
-        {/* 🎯 Answer Preview */}
-        <Box sx={{ mt: 2, display: "flex", flexWrap: "wrap", gap: 1 }}>
-          {answersArray.map((ans, idx) => (
-            <Typography
-              key={idx}
-              sx={{
-                px: 1,
-                py: 0.5,
-                borderRadius: "6px",
-                bgcolor: idx === position ? "error.main" : "grey.300",
-                color: idx === position ? "white" : "black",
-                fontWeight: idx === position ? "bold" : "normal",
-                fontSize: "0.875rem",
-                whiteSpace: "nowrap",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                maxWidth: "150px",
-              }}
-              title={ans}
-            >
-              {ans.length > 15 ? `${ans.substring(0, 15)}...` : ans}
+        {/* 🧩 Display delimited answers */}
+        <Box
+          sx={{
+            mt: 1,
+            display: "flex",
+            flexDirection: "column",
+            gap: 1.5,
+          }}
+        >
+          {answersArray.length > 0 ? (
+            answersArray.map((line, idx) => (
+              <Box
+                key={idx}
+                sx={{
+                  bgcolor: "grey.200",
+                  borderRadius: "8px",
+                  px: 2,
+                  py: 1.5,
+                  width: "100%",
+                }}
+              >
+                <Box
+                  sx={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    gap: 1,
+                  }}
+                >
+                  {line
+                    .split(" ||| ")
+                    .filter((ans) => ans.trim().length > 0)
+                    .map((ans, i) => (
+                      <Box
+                        key={i}
+                        sx={{
+                          bgcolor: "grey.300",
+                          px: 1.5,
+                          py: 0.5,
+                          borderRadius: "6px",
+                          fontWeight: 500,
+                          fontSize: "0.9rem",
+                        }}
+                      >
+                        {ans.trim()}
+                      </Box>
+                    ))}
+                </Box>
+              </Box>
+            ))
+          ) : loadingAnswers ? (
+            <Typography color="text.secondary" variant="body2">
+              Generating answers...
             </Typography>
-          ))}
+          ) : (
+            <Typography color="text.secondary" variant="body2">
+              No generated answers yet.
+            </Typography>
+          )}
         </Box>
       </DialogContent>
 

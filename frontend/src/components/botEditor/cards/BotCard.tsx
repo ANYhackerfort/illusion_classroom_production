@@ -117,11 +117,6 @@ const BotCard: React.FC<BotCardProps> = ({
             <strong>Memory:</strong> {memory || "None"}
           </Typography>
 
-          <Typography variant="subtitle1" gutterBottom>
-            <strong>Answer:</strong>{" "}
-            {answer_select.length > 0 ? answer_select.join(", ") : "—"}
-          </Typography>
-
           <Button
             fullWidth
             onClick={() => setEditOpen(true)}

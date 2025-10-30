@@ -9,7 +9,7 @@ import {
   deleteSurveyById,
   clearAllSurveys,
 } from "../../indexDB/surveyStorage";
-import { useOrgSocketContext } from "../../finder/socket/OrgSocketContext";
+import { useOrgSocketContext } from "../socket/OrgSocketContext";
 import { useParams } from "react-router-dom";
 import {
   getMeetingId,

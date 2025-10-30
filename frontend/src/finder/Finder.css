@@ -151,22 +151,27 @@
   position: absolute;
   top: -4px;
   left: -8px;
-  background-color: transparent;
+  background: none;
   border: none;
   cursor: pointer;
-  z-index: 10;
   color: black;
-  font-size: 16px;
+  font-size: 18px;          /* clear simple 'x' */
   font-weight: bold;
+  line-height: 1;
   border-radius: 50%;
   user-select: none;
   outline: none;
+  z-index: 10;
+  transition: transform 0.15s ease, color 0.15s ease;
   -webkit-tap-highlight-color: transparent;
 }
 
+/* hover: enlarge slightly and fade color */
 .mac-close-button:hover {
-  color: darkred;
+  transform: scale(1.25);
+  color: #c00; /* light red tint on hover (optional) */
 }
+
 
 /* ---------- Resizer (bottom-right) ---------- */
 .resizer {

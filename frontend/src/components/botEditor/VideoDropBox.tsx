@@ -15,7 +15,7 @@ import {
 } from "./interfaces/bot_drop";
 import { useOrgSocketContext } from "../../finder/socket/OrgSocketContext";
 import { useParams } from "react-router-dom";
-import { getMeetingId } from "../../components/videoDisplayer/api/save";
+import { getMeetingId } from "../videoDisplayer/api/save";
 import type { ServerBot } from "./interfaces/bot_drop";
 
 // =======================================================
@@ -89,7 +89,15 @@ const VideoDropBox: React.FC<VideoDropBoxProps> = ({
               id: String(b.id),
               name: b.name,
               memory: b.memory || "",
-              answer_select: b.answers || [],
+              answer_select: Array.isArray(b.answers)
+                ? b.answers.map((entry: any) => {
+                    if (Array.isArray(entry)) return entry.join(" ||| ");
+                    else if (entry && Array.isArray(entry.answers))
+                      return entry.answers.join(" ||| ");
+                    else if (typeof entry === "string") return entry;
+                    return "";
+                  })
+                : [],
               image_url: b.image_url || "",
               video_url: b.video_url || "",
               associated_meeting_id: String(b.meeting_id),
@@ -173,7 +181,15 @@ const VideoDropBox: React.FC<VideoDropBoxProps> = ({
                 id: String(b.id),
                 name: b.name || "Unnamed Bot",
                 memory: b.memory || "",
-                answer_select: b.answers || [],
+                answer_select: Array.isArray(b.answers)
+                  ? b.answers.map((entry: any) => {
+                      if (Array.isArray(entry)) return entry.join(" ||| ");
+                      else if (entry && Array.isArray(entry.answers))
+                        return entry.answers.join(" ||| ");
+                      else if (typeof entry === "string") return entry;
+                      return "";
+                    })
+                  : [],
                 image_url: b.image || b.image_url || "",
                 video_url: b.video_url || "",
                 associated_meeting_id: b.meeting_id || null,
@@ -197,7 +213,15 @@ const VideoDropBox: React.FC<VideoDropBoxProps> = ({
                 id: String(b.id),
                 name: b.name,
                 memory: b.memory || "",
-                answer_select: b.answers || [],
+                answer_select: Array.isArray(b.answers)
+                  ? b.answers.map((entry: any) => {
+                      if (Array.isArray(entry)) return entry.join(" ||| ");
+                      else if (entry && Array.isArray(entry.answers))
+                        return entry.answers.join(" ||| ");
+                      else if (typeof entry === "string") return entry;
+                      return "";
+                    })
+                  : [],
                 image_url: b.image || b.image_url || "",
                 video_url: b.video_url || "",
                 associated_meeting_id: b.meeting_id || null,
@@ -251,19 +275,26 @@ const VideoDropBox: React.FC<VideoDropBoxProps> = ({
             video: file,
           });
 
-          // ✅ Use backend’s response
+          // ✅ Ensure safe, string-only answers
           const botRecord: Bot = {
-            id: String(created.bot_id), // ✅ Django’s primary key
+            id: String(created.bot_id),
             name: created.name || baseName,
             memory: created.memory || "",
-            answer_select: created.answers || [],
+            answer_select: Array.isArray(created.answers)
+              ? created.answers.map((entry: any) => {
+                  if (Array.isArray(entry)) return entry.join(" ||| ");
+                  else if (entry && Array.isArray(entry.answers))
+                    return entry.answers.join(" ||| ");
+                  else if (typeof entry === "string") return entry;
+                  return "";
+                })
+              : [],
             image_url: created.image_url || "",
             video_url: created.video_url || "",
             associated_meeting_id:
               created.meeting_id || currentMeetingIdRef.current,
           };
 
-          // ✅ Store locally in IndexedDB
           await storeBotView(botRecord);
         }
 

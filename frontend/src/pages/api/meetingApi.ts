@@ -214,22 +214,17 @@ export const fetchBufferedVideo = async (url: string): Promise<string> => {
 
 export const checkMeetingAccess = async (
   orgId: number,
-  meetingId: string,
-  userEmail?: string,
-): Promise<{ admin_access: boolean; participant_access: boolean }> => {
-  const url = userEmail
-    ? `/api/auth/check_access/${orgId}/${encodeURIComponent(meetingId)}/?email=${encodeURIComponent(userEmail)}`
-    : `/api/auth/check_access/${orgId}/${encodeURIComponent(meetingId)}/`;
+  meetingId: string
+): Promise<{ admin_access: boolean }> => {
+  const url = `/api/auth/check_access/${orgId}/${encodeURIComponent(meetingId)}/`;
 
-  const response = await axiosClient.get<{
-    admin_access: boolean;
-    participant_access: boolean;
-  }>(url, {
+  const response = await axiosClient.get<{ admin_access: boolean }>(url, {
     withCredentials: true,
   });
 
   return response.data;
 };
+
 // ✅ unchanged: still just returns currently playing URL
 export const getCurrentlyPlayingUrl = async (
   meetingName: string,
@@ -342,4 +337,20 @@ export const deleteOrganization = async (orgId: number) => {
     { withCredentials: true },
   );
   return response.data;
+};
+
+export type ActiveBotVideo = {
+  name: string;
+  video_url: string | null;
+};
+
+export const getActiveBotsVideoName = async (
+  orgId: number,
+  roomName: string,
+): Promise<{ bots: ActiveBotVideo[] }> => {
+  const res = await axiosClient.get(
+    `/api/auth/get_active_bots_video_name/${orgId}/${encodeURIComponent(roomName)}/`,
+    { withCredentials: true },
+  );
+  return res.data;
 };

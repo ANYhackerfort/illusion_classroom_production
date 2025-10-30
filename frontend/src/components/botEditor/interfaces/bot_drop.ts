@@ -35,11 +35,9 @@ export async function storeBotToServer(
 // =======================================================
 export async function editBotOnServer(
   bot_id: string | number,
-  updates: {
-    name?: string;
-    memory?: string;
-    answers?: string[];
-  },
+  orgId: number,
+  meetingName: string,
+  memory: string,
 ) {
   const id = Number(bot_id);
   if (isNaN(id)) {
@@ -47,13 +45,11 @@ export async function editBotOnServer(
   }
 
   const payload = {
-    ...(updates.name && { name: updates.name }),
-    ...(updates.memory && { memory: updates.memory }),
-    ...(updates.answers && { answers: updates.answers }),
+    memory: memory,
   };
 
   const response = await axiosClient.post(
-    `/api/auth/edit_bot/${id}/`,
+    `/api/auth/edit_bot/${id}/${orgId}/${encodeURIComponent(meetingName)}/`,
     payload,
     { withCredentials: true },
   );
@@ -119,5 +115,29 @@ export async function getAllBotsFromServer(orgId: number) {
   );
 
   // returns { cached: boolean, bots: [...] }
+  return response.data;
+}
+
+export async function generateAnswersForBot(
+  botId: number,
+  orgId: number,
+  roomName: string,
+  botMemory?: string
+): Promise<{
+  ok: boolean;
+  bot_id: number;
+  generated_answers_count: number;
+  answers: { question: string; answers: string[] }[];
+}> {
+  const url = `/api/auth/generate_answers_bot/${encodeURIComponent(
+    botId
+  )}/${encodeURIComponent(orgId)}/${encodeURIComponent(roomName)}/`;
+
+  const response = await axiosClient.post(
+    url,
+    { bot_memory: botMemory || "" },
+    { withCredentials: true }
+  );
+
   return response.data;
 }

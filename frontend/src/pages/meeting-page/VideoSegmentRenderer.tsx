@@ -42,10 +42,7 @@ const VideoSegmentRenderer: React.FC = () => {
     useState<QuestionCardData | null>(null);
   const { roomName, org_id } = useParams();
   const [adminAccess, setAdminAccess] = useState<boolean | null>(null);
-  const [participantAccess, setParticipantAccess] = useState<boolean | null>(
-    null,
-  );
-  const [noAccess, setNoAccess] = useState(false);
+  const [participantAccess, setParticipantAccess] = useState<boolean>(false);
   const videoRef = useRef<HTMLVideoElement>(
     null,
   ) as React.RefObject<HTMLVideoElement>;
@@ -60,7 +57,7 @@ const VideoSegmentRenderer: React.FC = () => {
   const videoStoppedRef = useRef(true);
   const isPlayingRef = useRef(false);
 
-  const { socket } = useMainMeetingWebSocket();
+  const { socket } = useMainMeetingWebSocket();    
   
   useEffect(() => {
       console.log(socket);
@@ -145,30 +142,19 @@ const VideoSegmentRenderer: React.FC = () => {
     const verifyAccess = async () => {
       if (!roomName) return;
       try {
-        const cachedEmail = localStorage.getItem("currentUserEmail");
         const result = await checkMeetingAccess(
           orgIdNum,
           roomName,
-          cachedEmail ?? undefined,
         );
 
         setAdminAccess(result.admin_access);
-        setParticipantAccess(result.participant_access);
       } catch (err) {
         console.error("Access check failed:", err);
         setAdminAccess(false);
-        setParticipantAccess(false);
       }
     };
     verifyAccess();
   }, []);
-
-  useEffect(() => {
-    // Update whenever adminAccess, participantAccess, or roomName changes
-    setNoAccess(
-      adminAccess === false && participantAccess === false && !!roomName,
-    );
-  }, [adminAccess, participantAccess, roomName]);
 
   // setSegemnts, setVideoUrl
   useEffect(() => {
@@ -284,7 +270,7 @@ const VideoSegmentRenderer: React.FC = () => {
       <div className="video-container">
         {adminAccess && <MissionControl />}
 
-        {noAccess && (
+        {!participantAccess && !adminAccess && (
           <div className="no-access-overlay">
             <NoAccessJoinGate
               onAccessGranted={() => setParticipantAccess(true)}

@@ -1103,23 +1103,24 @@ def get_video_by_id(request, video_id):
         return JsonResponse({"error": str(e)}, status=500)
 
 @csrf_exempt
-@login_required
 def check_meeting_access(request, org_id, meeting_id):
     user = request.user
+    if (request.user.is_authenticated == False):
+        return JsonResponse({
+            "admin_access": False,
+        })
+        
     user_email = user.email
 
     # 🔑 Separate cache keys
     admin_cache_key = f"meeting_admin_access:{org_id}:{meeting_id}:{user_email}"
-    participant_cache_key = f"meeting_participant_access:{org_id}:{meeting_id}:{user_email}"
 
     # ✅ Try cache first
     admin_access = cache.get(admin_cache_key)
-    participant_access = cache.get(participant_cache_key)
 
-    if admin_access is not None and participant_access is not None:
+    if admin_access is not None:
         return JsonResponse({
             "admin_access": admin_access,
-            "participant_access": participant_access,
         })
 
     try:
@@ -1127,7 +1128,6 @@ def check_meeting_access(request, org_id, meeting_id):
     except Meeting.DoesNotExist:
         return JsonResponse({
             "admin_access": False,
-            "participant_access": False,
         })
 
     org = meeting.organization  # ✅ fetch organization
@@ -1140,16 +1140,9 @@ def check_meeting_access(request, org_id, meeting_id):
             or user_email in meeting.shared_with
         )
         cache.set(admin_cache_key, admin_access, timeout=300)
-
-    if participant_access is None:
-        participant_access = Participant.objects.filter(
-            meeting=meeting, email=user_email
-        ).exists()
-        cache.set(participant_cache_key, participant_access, timeout=300)
-
+        
     return JsonResponse({
         "admin_access": admin_access,
-        "participant_access": participant_access,
     })
 
 # @csrf_exempt
@@ -2767,7 +2760,7 @@ def store_bot(request, org_id, meeting_name):
 # ============================================================
 @csrf_exempt
 @login_required
-def edit_bot(request, bot_id):
+def edit_bot(request, bot_id, org_id, room_name):
     if request.method != "POST":
         return JsonResponse({"error": "POST required"}, status=405)
 
@@ -2812,7 +2805,19 @@ def edit_bot(request, bot_id):
                 "payload": {"id": bot.id},
             },
         )
-
+        
+        # update for active meeting
+        cache_key = f"active_meeting:{org_id}:{room_name}"
+        existing = cache.get(cache_key)
+        group_name = f"meeting_{org_id}_{room_name}"
+        async_to_sync(channel_layer.group_send)(
+                group_name,
+                {
+                    "type": "meeting_state_changed",
+                    "state": existing,
+                }
+            )
+        
         return JsonResponse({"message": "Bot updated", "bot_id": bot.id}, status=200)
 
     except Exception as e:
@@ -3039,7 +3044,6 @@ def update_or_create_active_meeting(request, org_id, room_name):
         try:
             channel_layer = get_channel_layer()
             group_name = f"meeting_{org_id}_{room_name}"
-
             async_to_sync(channel_layer.group_send)(
                 group_name,
                 {
@@ -3063,6 +3067,129 @@ def update_or_create_active_meeting(request, org_id, room_name):
         print(f"🔥 Exception in update_or_create_active_meeting: {e}")
         return JsonResponse({"error": "Internal server error"}, status=500)
     
+@csrf_exempt
+@login_required
+def generate_answers_bot(request, bot_id, org_id, room_name):
+    print(f"🟡 [generate_answers_bot] Called for bot_id={bot_id}, org={org_id}, room={room_name}")
+    
+    try:
+        bot = Bot.objects.filter(id=bot_id, organization__id=org_id).first()
+        if not bot:
+            print(f"❌ Bot {bot_id} not found in org {org_id}")
+            return JsonResponse({"error": "Bot not found"}, status=404)
+
+        cache_key = f"active_meeting:{org_id}:{room_name}"
+        existing = cache.get(cache_key)
+        active_video_id = existing.get("active_video_id") if existing else None
+        print(f"🟩 Active video ID from cache: {active_video_id}")
+
+        if not active_video_id:
+            return JsonResponse({"error": "Active video not found"}, status=400)
+
+        data = json.loads(request.body)
+        bot_memory = data.get("bot_memory", "")
+
+        # Fetch all segments for active video
+        video_segments = VideoSegment.objects.filter(video__id=active_video_id)
+
+        segment_data = []
+        for segment in video_segments:
+            if segment.question_card:
+                qc = segment.question_card
+                segment_data.append({
+                    "question": qc.question,
+                    "answers": qc.answers,
+                    "type": qc.type,
+                })
+
+        final_answers = []
+        for seg in segment_data:
+            generated = SmartBotAnswerEngine.generate_simple_answers(
+                question=seg["question"],
+                answers=seg["answers"],
+                question_type=seg["type"],
+                bot_memory=bot_memory,
+            )
+
+            if generated:
+                final_answers.append({
+                    "question": seg["question"],
+                    "answers": generated
+                })
+
+        # ✅ Store final answers into the bot model
+        bot.answers = final_answers
+        bot.save(update_fields=["answers"])
+
+        print(f"💾 Saved {len(final_answers)} generated answers for bot {bot.id}")
+
+        return JsonResponse({
+            "ok": True,
+            "bot_id": bot.id,
+            "answers": final_answers,
+        })
+
+    except json.JSONDecodeError:
+        print("❌ JSON decode error — invalid request body")
+        return JsonResponse({"error": "Invalid JSON"}, status=400)
+    except Exception as e:
+        print(f"🔥 Exception in generate_answers_bot: {e}")
+        return JsonResponse({"error": "Internal server error"}, status=500)
+
+@csrf_exempt
+@login_required
+def get_active_bots_video_name(request, org_id, room_name):
+    """
+    Fetches the active bots (from cached active meeting)
+    and returns a list of {name, video_url}.
+    """
+    print(f"🟦 [get_active_bots_video_name] Called for org={org_id}, room={room_name}")
+
+    if request.method != "GET":
+        print("❌ Invalid request method:", request.method)
+        return JsonResponse({"error": "Only GET allowed"}, status=405)
+
+    try:
+        cache_key = f"active_meeting:{org_id}:{room_name}"
+        meeting_data = cache.get(cache_key)
+
+        if not meeting_data or "active_bot_ids" not in meeting_data:
+            print(f"⚠️ No active bots found in cache for {cache_key}")
+            return JsonResponse({"bots": []})
+
+        bot_ids = meeting_data.get("active_bot_ids", [])
+        if not bot_ids:
+            print("⚠️ Empty active_bot_ids list.")
+            return JsonResponse({"bots": []})
+
+        bots_info = []
+        for bot_id in bot_ids:
+            bot = Bot.objects.filter(id=bot_id, organization__id=org_id).first()
+            if not bot:
+                continue
+
+            # build safe absolute URL for video
+            video_url = None
+            if bot.video_url:
+                if not bot.video_url.startswith("http") and not bot.video_url.startswith("/media/"):
+                    video_url = request.build_absolute_uri(
+                        os.path.join(settings.MEDIA_URL, bot.video_url)
+                    ).replace("\\", "/")
+                else:
+                    video_url = request.build_absolute_uri(bot.video_url).replace("\\", "/")
+
+            bots_info.append({
+                "name": bot.name,
+                "video_url": video_url,
+            })
+
+        print(f"✅ Returning {len(bots_info)} bots for org={org_id}, room={room_name}")
+        return JsonResponse({"bots": bots_info})
+
+    except Exception as e:
+        print(f"🔥 Exception in get_active_bots_video_name: {e}")
+        return JsonResponse({"error": "Internal server error"}, status=500)
+
 @csrf_exempt
 def get_active_meeting(request, org_id, room_name):
     print(f"🟦 [get_active_meeting] Called for org={org_id}, room={room_name}")

@@ -1,11 +1,13 @@
 import React from "react";
 import { Box, Typography } from "@mui/material";
+import MicOffRoundedIcon from "@mui/icons-material/MicOffRounded";
 
 interface NameOverlayCardGlassProps {
   image?: string;
   name: string;
   ratio?: string;
   videoSrc?: string;
+  muted?: boolean; // 👈 optional, defaults true
 }
 
 const NameOverlayCardGlass: React.FC<NameOverlayCardGlassProps> = ({
@@ -13,9 +15,8 @@ const NameOverlayCardGlass: React.FC<NameOverlayCardGlassProps> = ({
   name,
   ratio = "16 / 9",
   videoSrc,
+  muted = true,
 }) => {
-  console.log(`[DEBUG] Rendering bot "${name}" with videoSrc:`, videoSrc);
-
   const handleVideoError = () => {
     console.error(`[ERROR] Failed to load video for bot: ${name}`);
   };
@@ -40,13 +41,13 @@ const NameOverlayCardGlass: React.FC<NameOverlayCardGlassProps> = ({
           position: "relative",
           width: "100%",
           aspectRatio: ratio,
-          backgroundColor: videoSrc ? "#000" : "#111", // slight contrast
+          backgroundColor: videoSrc ? "#000" : "#111",
         }}
       >
         {videoSrc ? (
           <video
             autoPlay
-            muted
+            muted={muted}
             loop
             playsInline
             src={videoSrc}
@@ -57,7 +58,7 @@ const NameOverlayCardGlass: React.FC<NameOverlayCardGlassProps> = ({
               width: "100%",
               height: "100%",
               objectFit: "cover",
-              backgroundColor: "red", // ⛳️ Visible if video fails
+              backgroundColor: "red", // visible when failed
             }}
           />
         ) : (
@@ -77,7 +78,28 @@ const NameOverlayCardGlass: React.FC<NameOverlayCardGlassProps> = ({
           />
         )}
 
-        {/* Liquid glass overlay name tag */}
+        {/* 🔇 Mic-off badge */}
+        {muted && (
+          <Box
+            sx={{
+              position: "absolute",
+              top: 8,
+              right: 8,
+              backgroundColor: "rgba(255, 0, 0, 0.85)",
+              borderRadius: "50%",
+              width: 24,
+              height: 24,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              boxShadow: "0 0 6px rgba(0,0,0,0.4)",
+            }}
+          >
+            <MicOffRoundedIcon sx={{ color: "#fff", fontSize: 16 }} />
+          </Box>
+        )}
+
+        {/* 🪟 Liquid glass name tag */}
         <Box
           sx={{
             position: "absolute",

@@ -31,7 +31,7 @@ const LocalBotCard: React.FC<LocalBotCardProps> = ({
   onDeleted,
 }) => {
   const [editOpen, setEditOpen] = useState(false);
-  const { org_id } = useParams<{ org_id: string; roomName: string }>();
+  const { org_id, roomName} = useParams<{ org_id: string; roomName: string }>();
 
   useEffect(() => {
     console.log("🎞️ videoThumbnail for bot:", name, "→", image_url);
@@ -58,16 +58,18 @@ const LocalBotCard: React.FC<LocalBotCardProps> = ({
       }
 
       // ✅ 2. Fetch current active meeting state
-      const res = await getActiveMeeting(Number(org_id), Number(meetingId));
+      const res = await getActiveMeeting(Number(org_id), roomName!);
       const current = res.data;
       const updatedBotIds = current.active_bot_ids.filter(
         (botId: number) => botId !== Number(id),
       );
 
+      console.log("UDPATED BOTS", updatedBotIds)
+
       // ✅ 3. Update backend with new list
       await updateActiveMeeting({
         org_id: Number(org_id),
-        meeting_id: Number(meetingId),
+        roomName: roomName!,
         active_bot_ids: updatedBotIds,
         active_video_id: "djsut", // don't touch
         active_survey_id: "djsut", // don't touch
@@ -77,12 +79,7 @@ const LocalBotCard: React.FC<LocalBotCardProps> = ({
     } catch (err) {
       console.error("❌ Failed to remove bot from backend:", err);
     }
-  }, [id, onDeleted, org_id, meetingName]);
-
-  // ✅ Normalize and safely handle empty answers
-  const safeAnswers = Array.isArray(answer_select) ? answer_select : [];
-
-  const hasAnswers = safeAnswers.length > 0;
+  }, [id, onDeleted, org_id, roomName]);
 
   return (
     <>
@@ -120,11 +117,21 @@ const LocalBotCard: React.FC<LocalBotCardProps> = ({
             <strong>Memory:</strong> {memory || "None"}
           </Typography>
 
-          {/* ✅ Only show if answers exist */}
-          {hasAnswers && (
-            <Typography variant="subtitle1" gutterBottom>
-              <strong>Answer:</strong> {safeAnswers.join(", ")}
-            </Typography>
+          {Array.isArray(answer_select) && answer_select.length > 0 && (
+            <div className="bot-answers">
+              {answer_select.slice(0, 4).map((row: string, rowIdx: number) => (
+                <div key={rowIdx} className="bot-answer-row">
+                  {row
+                    .split(" ||| ")
+                    .filter((ans) => ans.trim().length > 0)
+                    .map((ans: string, i: number) => (
+                      <span key={i} className="bot-answer-pill">
+                        {ans.trim()}
+                      </span>
+                    ))}
+                </div>
+              ))}
+            </div>
           )}
 
           <Button
@@ -143,7 +150,7 @@ const LocalBotCard: React.FC<LocalBotCardProps> = ({
         onClose={() => setEditOpen(false)}
         botId={id}
         initialMemory={memory}
-        initialAnswers={safeAnswers}
+        initialAnswers={answer_select}
         initialName={name}
         meetingName={meetingName}
       />

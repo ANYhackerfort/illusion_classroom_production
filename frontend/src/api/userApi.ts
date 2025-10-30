@@ -42,15 +42,15 @@ export type ActiveMeeting = {
 
 export const updateActiveMeeting = async (data: {
   org_id: number;
-  meeting_id: number;
+  roomName: string;
   active_bot_ids?: number[] | "djsut";
   active_video_id?: number | "djsut" | null;
   active_survey_id?: number | "djsut" | null;
 }): Promise<{ message: string; data: ActiveMeeting }> => {
-  const { org_id, meeting_id, ...body } = data;
+  const { org_id, roomName, ...body } = data;
 
   const res = await axiosClient.post(
-    `/api/auth/update_active_meeting/${org_id}/${meeting_id}/`,
+    `/api/auth/update_active_meeting/${org_id}/${encodeURIComponent(roomName)}/`,
     body,
     { withCredentials: true },
   );
@@ -60,10 +60,10 @@ export const updateActiveMeeting = async (data: {
 
 export const getActiveMeeting = async (
   orgId: number,
-  meetingId: number,
+  roomName: string,
 ): Promise<{ message: string; data: ActiveMeeting }> => {
   const res = await axiosClient.get(
-    `/api/auth/get_active_meeting/${orgId}/${meetingId}/`,
+    `/api/auth/get_active_meeting/${orgId}/${encodeURIComponent(roomName)}/`,
     { withCredentials: true },
   );
   return res.data;

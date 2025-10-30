@@ -53,6 +53,8 @@ from .views import (
     get_video_state,
     update_video_state,
     join_room,
+    generate_answers_bot,
+    get_active_bots_video_name,
 )
 
 urlpatterns = [
@@ -117,11 +119,17 @@ urlpatterns = [
     # path("delete_bot/<uuid:bot_id>/", delete_bot, name="delete_bot"),
     
     path("store_bot/<int:org_id>/<str:meeting_name>/", store_bot, name="store_bot"),
-    path("edit_bot/<int:bot_id>/", edit_bot, name="edit_bot"),           # ✅ changed
+    path("edit_bot/<int:bot_id>/<int:org_id>/<str:room_name>/", edit_bot, name="edit_bot"),           # ✅ changed
     path("delete_bot/<int:bot_id>/", delete_bot, name="delete_bot"),     # ✅ changed
     path("get_bot_by_id/<int:bot_id>/", get_bot_by_id, name="get_bot_by_id"),  # ✅ changed
     path("get_all_bots/<int:org_id>/", get_all_bots, name="get_all_bots"),
-    
+    path("generate_answers_bot/<int:bot_id>/<int:org_id>/<str:room_name>/", generate_answers_bot, name="generate_answers_bot",),
+    path(
+        "get_active_bots_video_name/<int:org_id>/<str:room_name>/",
+        get_active_bots_video_name,
+        name="get_active_bots_video_name",
+    ),
+
     path("update_active_meeting/<int:org_id>/<str:room_name>/", update_or_create_active_meeting, name="update_active_meeting"),
     path("get_active_meeting/<int:org_id>/<str:room_name>/", get_active_meeting, name="get_active_meeting"),
     path("pause_video_state/<int:org_id>/<str:room_name>/", pause_video_state, name="pause_video_state"),
