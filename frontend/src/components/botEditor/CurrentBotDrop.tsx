@@ -4,7 +4,7 @@ import type { Bot } from "./interfaces/bot";
 import "./CurrentBotDrop.css";
 import { useMouse } from "../../hooks/drag/MouseContext";
 import { useParams } from "react-router-dom";
-import { getBotByIdFromServer ../videoDisplayer/api/save
+import { getBotByIdFromServer } from "./interfaces/bot_drop";
 import { getActiveMeeting, updateActiveMeeting } from "../../api/userApi";
 import { useMainMeetingWebSocket } from "../../api/MainSocket";
 
