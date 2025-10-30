@@ -4,10 +4,32 @@ import { getActiveBotsVideoName } from "../../api/meetingApi";
 import type { ActiveBotVideo } from "../../api/meetingApi";
 import { useParams } from "react-router-dom";
 import { useMainMeetingWebSocket } from "../../../api/MainSocket";
-import MicOffRoundedIcon from "@mui/icons-material/MicOffRounded";
 import "./LiquidGlassBotGrid.css";
 
 export const BACKEND_VIDEO_URL = "";
+
+// 🎤 Inline Mic-Off SVG component
+const MicOffIcon: React.FC<{ size?: number; color?: string }> = ({
+  size = 16,
+  color = "#fff",
+}) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke={color}
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M9 9v3a3 3 0 0 0 5.12 2.12" />
+    <path d="M15 9.34V5a3 3 0 0 0-6 0v1.34" />
+    <line x1="1" y1="1" x2="23" y2="23" />
+    <path d="M19 11v1a7 7 0 0 1-12 5M12 19v4M8 23h8" />
+  </svg>
+);
 
 const LiquidGlassBotGrid: React.FC = () => {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -172,7 +194,7 @@ const LiquidGlassBotGrid: React.FC = () => {
                 boxShadow: "0 0 6px rgba(0,0,0,0.4)",
               }}
             >
-              <MicOffRoundedIcon sx={{ color: "#fff", fontSize: 16 }} />
+              <MicOffIcon size={14} color="#fff" />
             </div>
           </div>
 
