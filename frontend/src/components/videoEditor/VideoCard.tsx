@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from "react";
-import "./VideoCard.css"; // renamed CSS
-import { FaMicrophone } from "react-icons/fa";
+import React, { useEffect, useState } from "react";
+import "./VideoCard.css";
 import SliderQuestion from "./questionProps/SliderQuestion";
 import MCQQuestion from "./questionProps/MCQuestion";
 import ShortAnswerQuestion from "./questionProps/ShortAnswer";
 import { useParams } from "react-router-dom";
+import { getBotAnswers } from '../videoDisplayer/api/save';
+import type { GetBotAnswersResponse } from "../videoDisplayer/api/save";
 
 export interface BotAnswer {
   name: string;
@@ -17,6 +18,7 @@ interface QuestionCardProps {
   id?: string;
   question: string;
   answers: string[];
+  correctAnswers?: string[];
   difficulty: "easy" | "medium" | "hard";
   type: "slider" | "short" | "mc" | "match" | "rank" | "ai";
   displayType?: "face" | "initial" | "anonymous";
@@ -32,52 +34,55 @@ const VideoQuestionCard: React.FC<QuestionCardProps> = ({
   id,
   question,
   answers,
-  // difficulty,
+  correctAnswers = [],
   type,
-  displayType,
-  showWinner,
-  live,
-  questionNumber,
+  displayType = "anonymous",
+  showWinner = false,
+  live = true,
   start,
   end,
   currentTimeRef,
 }) => {
-  const [displayTypeState] = useState<"face" | "initial" | "anonymous">(
-    displayType ?? "anonymous"
-  );
-  const [showWinnerState] = useState<boolean>(showWinner ?? false);
-  const [liveState] = useState<boolean>(live ?? false);
-  const [botAnswers, setBotAnswers] = useState<BotAnswer[] | null>(null);
+  const [botAnswersData, setBotAnswersData] = useState<GetBotAnswersResponse | null>(null);
+  const { org_id, roomName } = useParams<{ org_id: string; roomName: string }>();
 
-  const { roomName } = useParams();
-
+  // 🟡 Debug props
   useEffect(() => {
-    const fetchBotAnswers = async () => {
-      console.log("Question type is", type);
-      console.log("Question is", question);
-      // placeholder for backend fetch if needed
+    console.log("🧩 [VideoQuestionCard Debug]");
+    console.log("🟢 Question:", question);
+    console.log("🟣 Type:", type);
+    console.log("🟡 DisplayType:", displayType);
+    console.log("🏆 showWinner:", showWinner);
+    console.log("🔴 live:", live);
+    console.log("✅ Correct Answers:", correctAnswers);
+    console.log("🧮 Answers:", answers);
+  }, [question, type, displayType, showWinner, live, correctAnswers, answers]);
+
+  // 🧠 Fetch bot answers (refresh every 5s)
+  useEffect(() => {
+    if (!org_id || !roomName) return;
+
+    const fetchBots = async () => {
+      try {
+        console.log(`📡 Fetching bot answers for org=${org_id}, room=${roomName}`);
+        const data = await getBotAnswers(Number(org_id), roomName);
+        setBotAnswersData(data);
+      } catch (err) {
+        console.error("❌ Failed to fetch bot answers:", err);
+      }
     };
 
-    if (
-      id &&
-      questionNumber !== undefined &&
-      start !== undefined &&
-      end !== undefined &&
-      answers !== undefined
-    ) {
-      fetchBotAnswers();
-    }
-  }, [id, questionNumber, start, end, answers, roomName, type, question]);
+    fetchBots();
+    const interval = setInterval(fetchBots, 5000); // refresh every 5 seconds
+    return () => clearInterval(interval);
+  }, [org_id, roomName]);
 
   const handleMouseDown = () => {
-    console.log(displayTypeState);
+    console.log(`🖱️ Clicked card for ${question}`);
   };
 
   return (
-    <div
-      className={"vq-card"}
-      onMouseDown={handleMouseDown}
-    >
+    <div className="vq-card" onMouseDown={handleMouseDown}>
       <div className="vq-header">
         <div className="vq-text">{question}</div>
         <div className={`vq-type ${type}`}>{type.toUpperCase()}</div>
@@ -87,45 +92,27 @@ const VideoQuestionCard: React.FC<QuestionCardProps> = ({
         {type === "slider" ? (
           <SliderQuestion
             answers={answers}
-            displayState={displayTypeState}
-            showWinner={showWinnerState}
-            live={liveState}
+            displayState={displayType}
+            showWinner={showWinner}
+            live={live}
           />
         ) : type === "short" ? (
           <ShortAnswerQuestion
-            botAnswers={botAnswers}
-            setBotAnswers={setBotAnswers}
+            botAnswers={[]}
+            setBotAnswers={() => {}}
             currentTimeRef={currentTimeRef}
           />
-        ) : type === "match" ? (
-          answers.map((answer, index) => (
-            <div key={index} className="vq-match-row">
-              <div className="vq-match-box">{answer}</div>
-              <div className="vq-match-box">?</div>
-            </div>
-          ))
-        ) : type === "rank" ? (
-          answers.map((answer, index) => (
-            <div key={index} className="vq-rank-row">
-              <span className="vq-rank-number">{index + 1}.</span>
-              <span className="vq-rank-text">{answer}</span>
-            </div>
-          ))
-        ) : type === "ai" ? (
-          <div className="vq-ai-ui">
-            <div className="vq-ai-mic-ring">
-              <FaMicrophone size={24} />
-            </div>
-            <div className="vq-ai-prompt">
-              This is an AI interview-style question. Speak your answer.
-            </div>
-          </div>
         ) : type === "mc" ? (
           <MCQQuestion
             answers={answers}
-            botAnswers={botAnswers}
-            setBotAnswers={setBotAnswers}
+            questionId={id!}
             currentTimeRef={currentTimeRef}
+            displayType={displayType}
+            showWinner={showWinner}
+            correctAnswers={correctAnswers}
+            start={start}
+            end={end}
+            botAnswersData={botAnswersData ?? undefined} // 👈 pass live bot data
           />
         ) : (
           answers.map((answer, index) => (
@@ -137,9 +124,9 @@ const VideoQuestionCard: React.FC<QuestionCardProps> = ({
       </div>
 
       <div className="vq-footer">
-        <span className="vq-badge">{displayTypeState}</span>
-        {showWinnerState && <span className="vq-badge">🏆 Winner</span>}
-        {liveState && <span className="vq-badge">🔴 Live</span>}
+        <span className="vq-badge">{displayType}</span>
+        {showWinner && <span className="vq-badge">🏆 Winner</span>}
+        {live && <span className="vq-badge">🔴 Live</span>}
       </div>
     </div>
   );

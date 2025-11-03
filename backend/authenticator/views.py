@@ -918,6 +918,7 @@ def edit_video(request, video_id, org_id, room_name):
                     display_type=q_data.get("displayType"),
                     show_winner=q_data.get("showWinner"),
                     live=q_data.get("live"),
+                    correct_answers=q_data["correctAnswer"]
                 )
                 q_card_dict = {
                     "id": str(question_card.id),
@@ -2124,6 +2125,8 @@ def create_question_card(request, org_id, meeting_id):
         display_type = data.get("displayType", None)
         show_winner = data.get("showWinner", None)
         live = data.get("live", None)
+        
+        print(correct_answers)
 
         # ✅ Basic validation
         if not question or not answers or not difficulty or not qtype:
@@ -2143,6 +2146,7 @@ def create_question_card(request, org_id, meeting_id):
             show_winner=show_winner,
             live=live,
         )
+        
 
         print(f"🆕 Created QuestionCard {qc.id} for meeting {meeting.id} / org {organization.id}")
 
@@ -2182,6 +2186,185 @@ def create_question_card(request, org_id, meeting_id):
     except Exception as e:
         print("❌ Error in create_question_card:", e)
         return JsonResponse({"error": str(e)}, status=500)
+
+@csrf_exempt
+@require_POST
+def store_quatric_survey_answers(request, org_id, room_name):
+    """
+    Stores participant survey answers for a given meeting.
+    Uses the same join_room cache key namespace and expires after 12h.
+    """
+    COOKIE_MAX_AGE = 12 * 60 * 60  # 12 hours
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({"ok": False, "message": "Invalid JSON"}, status=400)
+
+    participant_name = data.get("participant_name")
+    answers = data.get("answers")
+
+    if not participant_name or not isinstance(answers, dict):
+        return JsonResponse(
+            {"ok": False, "message": "Missing participant_name or answers"},
+            status=400
+        )
+
+    # ✅ Reuse join_room cache namespace
+    safe_name = participant_name.lower().replace(" ", "_")
+    redis_key = f"join_room:{org_id}:{room_name}:{safe_name}:Qualtric_survey_answers"
+
+    print("stored_in", redis_key)
+    # ✅ Each answer stored as timestamped log entries
+    existing = cache.get(redis_key, [])
+    if not isinstance(existing, list):
+        existing = []
+
+    entry = {
+        "timestamp": now().isoformat(),
+        "answers": answers
+    }
+    existing.append(entry)
+    cache.set(redis_key, existing, timeout=COOKIE_MAX_AGE)
+
+    return JsonResponse({"ok": True, "message": "Survey answers stored", "entry": entry})
+
+@csrf_exempt
+@require_POST
+def store_video_question_answers(request, org_id, room_name, question_id):
+    """
+    Stores or replaces participant answers for a specific video question.
+    Cache key is scoped to org, room, participant, and question ID.
+    Replaces any previous answer for that question instead of appending.
+    """
+    COOKIE_MAX_AGE = 12 * 60 * 60  # 12 hours
+
+    # ✅ Parse JSON body safely
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({"ok": False, "message": "Invalid JSON"}, status=400)
+
+    participant_name = data.get("participant_name")
+    answers = data.get("answers")
+
+    if not participant_name or not isinstance(answers, dict):
+        return JsonResponse(
+            {"ok": False, "message": "Missing participant_name or answers"},
+            status=400
+        )
+
+    # ✅ Build Redis key per participant & question
+    safe_name = participant_name.lower().replace(" ", "_")
+    redis_key = f"video_question:{org_id}:{room_name}:{safe_name}:{question_id}:answers"
+
+    # ✅ Replace any previous entries — store only the latest answer
+    entry = {
+        "timestamp": now().isoformat(),
+        "answers": answers
+    }
+
+    cache.set(redis_key, [entry], timeout=COOKIE_MAX_AGE)
+
+    print(f"✅ Stored (replaced) in {redis_key}")
+    return JsonResponse({
+        "ok": True,
+        "message": "Video question answer stored (replaced previous entry)",
+        "entry": entry
+    })
+
+@csrf_exempt
+def get_all_video_question_answers(request, org_id, room_name):
+    """
+    Returns all stored video question answers for a given meeting across all participants and question IDs.
+    """
+    try:
+        # Example key pattern: video_question:{org_id}:{room_name}:{safe_name}:{question_id}:answers
+        keys = cache.keys(f"video_question:{org_id}:{room_name}:*:*:answers")
+        print("🎯 Video question keys found:", keys)
+
+        if not keys:
+            return JsonResponse({
+                "ok": True,
+                "message": "No stored video question answers found for this room.",
+                "participants": []
+            })
+
+        results = []
+        for key in keys:
+            parts = key.split(":")
+            if len(parts) < 6:
+                continue  # skip malformed keys
+
+            safe_name = parts[3]
+            question_id = parts[4]
+            data = cache.get(key)
+
+            results.append({
+                "participant": safe_name.replace("_", " "),
+                "question_id": question_id,
+                "count": len(data) if isinstance(data, list) else 0,
+                "answers": data or []
+            })
+
+        return JsonResponse({
+            "ok": True,
+            "org_id": org_id,
+            "room_name": room_name,
+            "total_participants": len({r["participant"] for r in results}),
+            "total_entries": len(results),
+            "participants": results
+        })
+
+    except Exception as e:
+        print("❌ Error in get_all_video_question_answers:", e)
+        return JsonResponse({
+            "ok": False,
+            "message": f"Error retrieving video question answers: {str(e)}"
+        }, status=500)
+
+@csrf_exempt
+def get_all_quatric_survey_answers(request, org_id, room_name):
+    """
+    Returns all stored Qualtrics survey answers for a given meeting across all participants.
+    """
+    try:
+        # redis = get_redis_connection("default")  # "default" cache alias from settings.py
+        # pattern = f"join_room:{org_id}:{room_name}:*:Qualtric_survey_answers"
+
+        keys = cache.keys(f"join_room:{org_id}:{room_name}:*:Qualtric_survey_answers")
+
+        print("SCANEND KEYS", keys)
+        if not keys:
+            return JsonResponse({
+                "ok": True,
+                "message": "No stored survey answers found for this room.",
+                "participants": []
+            })
+
+        results = []
+        for key in keys:
+            safe_name = key.split(":")[3]  # extract the safe participant name
+            data = cache.get(key)
+            results.append({
+                "participant": safe_name.replace("_", " "),
+                "count": len(data) if isinstance(data, list) else 0,
+                "answers": data or []
+            })
+
+        return JsonResponse({
+            "ok": True,
+            "org_id": org_id,
+            "room_name": room_name,
+            "participant_count": len(results),
+            "participants": results
+        })
+
+    except Exception as e:
+        return JsonResponse({
+            "ok": False,
+            "message": f"Error retrieving survey answers: {str(e)}"
+        }, status=500)
+
 
 @csrf_exempt
 @login_required
@@ -2239,6 +2422,12 @@ def get_all_question_cards(request, org_id):
             }
             for q in question_cards
         ]
+        
+          # 🧩 DEBUG LOG: Verify correctAnswers in serialized output
+        print("🧩 [DEBUG] Serialized question list preview:")
+        for q in question_list:
+            print(f"  • ID={q['id']} | correctAnswers={q['correctAnswers']} | "
+                  f"answers={q['answers']} | question={q['question']}")
 
         response_data = {"questions": question_list, "count": len(question_list)}
 
@@ -2558,7 +2747,6 @@ def delete_survey(request, survey_id: int):
 
 
 @csrf_exempt
-@login_required
 def get_survey_by_id(request, survey_id: int):
     """Fetch a single survey by its integer ID."""
     if request.method != "GET":
@@ -2928,7 +3116,7 @@ def get_bot_by_id(request, bot_id):
 # ============================================================
 # ✅ GET ALL BOTS (for org)
 # ============================================================
-@login_required
+@csrf_exempt
 def get_all_bots(request, org_id):
     try:
         user = request.user
@@ -3078,6 +3266,7 @@ def generate_answers_bot(request, bot_id, org_id, room_name):
             print(f"❌ Bot {bot_id} not found in org {org_id}")
             return JsonResponse({"error": "Bot not found"}, status=404)
 
+        # 🔹 Get meeting info from cache
         cache_key = f"active_meeting:{org_id}:{room_name}"
         existing = cache.get(cache_key)
         active_video_id = existing.get("active_video_id") if existing else None
@@ -3089,7 +3278,7 @@ def generate_answers_bot(request, bot_id, org_id, room_name):
         data = json.loads(request.body)
         bot_memory = data.get("bot_memory", "")
 
-        # Fetch all segments for active video
+        # 🎥 Fetch all segments for the active video
         video_segments = VideoSegment.objects.filter(video__id=active_video_id)
 
         segment_data = []
@@ -3097,6 +3286,7 @@ def generate_answers_bot(request, bot_id, org_id, room_name):
             if segment.question_card:
                 qc = segment.question_card
                 segment_data.append({
+                    "id": qc.id,  # ✅ store question ID
                     "question": qc.question,
                     "answers": qc.answers,
                     "type": qc.type,
@@ -3113,11 +3303,11 @@ def generate_answers_bot(request, bot_id, org_id, room_name):
 
             if generated:
                 final_answers.append({
-                    "question": seg["question"],
-                    "answers": generated
+                    "question_id": seg["id"],  # ✅ store ID, not text
+                    "answers": generated,
                 })
 
-        # ✅ Store final answers into the bot model
+        # ✅ Store the final answers
         bot.answers = final_answers
         bot.save(update_fields=["answers"])
 
@@ -3137,7 +3327,6 @@ def generate_answers_bot(request, bot_id, org_id, room_name):
         return JsonResponse({"error": "Internal server error"}, status=500)
 
 @csrf_exempt
-@login_required
 def get_active_bots_video_name(request, org_id, room_name):
     """
     Fetches the active bots (from cached active meeting)
@@ -3188,6 +3377,78 @@ def get_active_bots_video_name(request, org_id, room_name):
 
     except Exception as e:
         print(f"🔥 Exception in get_active_bots_video_name: {e}")
+        return JsonResponse({"error": "Internal server error"}, status=500)
+
+@csrf_exempt
+def get_bot_answers(request, org_id, room_name):
+    print(f"🟦 [get_bot_answers] Called for org={org_id}, room={room_name}")
+
+    if request.method != "GET":
+        return JsonResponse({"error": "Only GET allowed"}, status=405)
+
+    try:
+        cache_key = f"active_meeting:{org_id}:{room_name}"
+        meeting_data = cache.get(cache_key)
+
+        if not meeting_data or "active_bot_ids" not in meeting_data:
+            print(f"⚠️ No active bots found for {cache_key}")
+            return JsonResponse({"bots": []})
+
+        bot_ids = meeting_data.get("active_bot_ids", [])
+        bots_info = []
+
+        def build_absolute_media_url(field):
+            """Convert an ImageField/FileField to a full URL string."""
+            if not field:
+                return None
+            try:
+                # 🔹 Use Django's .url property and build full URL
+                url = field.url if hasattr(field, "url") else str(field)
+                absolute = request.build_absolute_uri(url).replace("\\", "/")
+                return absolute
+            except Exception as e:
+                print(f"⚠️ Could not build media URL for {field}: {e}")
+                return None
+
+        for bot_id in bot_ids:
+            bot = Bot.objects.filter(id=bot_id, organization__id=org_id).first()
+            if not bot:
+                continue
+
+            # ✅ Log raw field to confirm
+            print(f"BOT IMAGE RAW FIELD: {bot.image}")
+
+            # 🔹 Build full image URL
+            img_url = build_absolute_media_url(bot.image)
+            print(f"✅ Final Bot Image URL: {img_url}")
+
+            # 🔹 Resolve question text
+            resolved_answers = []
+            for entry in (bot.answers or []):
+                if not isinstance(entry, dict):
+                    continue
+                qid = entry.get("question_id")
+                if not qid:
+                    continue
+                q_obj = QuestionCard.objects.filter(id=qid).first()
+                resolved_answers.append({
+                    "question_id": qid,
+                    "question": q_obj.question if q_obj else None,
+                    "answers": entry.get("answers", []),
+                })
+
+            bots_info.append({
+                "id": bot.id,
+                "name": bot.name,
+                "img_url": img_url,
+                "answers": resolved_answers,
+            })
+
+        print(f"✅ Returning {len(bots_info)} bots for org={org_id}")
+        return JsonResponse({"bots": bots_info})
+
+    except Exception as e:
+        print(f"🔥 Exception in get_bot_answers: {e}")
         return JsonResponse({"error": "Internal server error"}, status=500)
 
 @csrf_exempt
@@ -3281,6 +3542,8 @@ def update_video_state(request, org_id, room_name):
     except Exception as e:
         print(f"❌ Error in update_video_state: {e}")
         return JsonResponse({"error": str(e)}, status=500)
+    
+
 
 @csrf_exempt
 @require_POST
@@ -3371,7 +3634,231 @@ def pause_video_state(request, org_id, room_name):
     except Exception as e:
         print(f"❌ Error in pause_video_state: {e}")
         return JsonResponse({"error": str(e)}, status=500)
+
+@csrf_exempt
+@require_POST
+def stop_meeting_complete(request, org_id, room_name):
+    """
+    Marks the meeting as ended for the given org_id and room_name.
+    Sets ended=True and retains the current active_survey_id if available.
+    Broadcasts the updated meeting state to all connected WebSocket clients.
+    """
+    print(f"🟥 [stop_meeting_complete] Called for org={org_id}, room={room_name}")
+
+    try:
+        cache_key = f"active_meeting:{org_id}:{room_name}"
+
+        # Fetch existing meeting state or initialize default
+        existing = cache.get(cache_key)
+        if not isinstance(existing, dict):
+            existing = {
+                "org_id": int(org_id),
+                "room_name": str(room_name),
+                "active_bot_ids": [],
+                "active_video_id": None,
+                "active_survey_id": None,
+                "last_updated": now().isoformat(),
+            }
+            print(f"⚠️ No existing meeting found, initializing default for {cache_key}")
+
+        # Mark meeting as ended
+        updated_state = {
+            **existing,
+            "ended": True,
+            "last_updated": now().isoformat(),
+        }
+
+        cache.set(cache_key, updated_state, timeout=60 * 60 * 10)
+        print(f"💾 Cached ended meeting state for {cache_key}: {updated_state}")
+
+        # Broadcast to WebSocket group
+        channel_layer = get_channel_layer()
+        group_name = f"meeting_{org_id}_{room_name}"
+
+        async_to_sync(channel_layer.group_send)(
+            group_name,
+            {"type": "meeting_state_changed", "state": updated_state}
+        )
+
+        print(f"📡 Broadcasted stop_meeting_complete to {group_name}")
+        return JsonResponse({
+            "message": "Meeting ended successfully",
+            "data": updated_state,
+        })
+
+    except Exception as e:
+        print(f"❌ Error in stop_meeting_complete: {e}")
+        return JsonResponse({"error": str(e)}, status=500)
     
+@csrf_exempt
+@require_POST
+def start_meeting_again(request, org_id, room_name):
+    """
+    Marks the meeting as started (not ended) for the given org_id and room_name.
+    Sets ended=False and retains any existing active_survey_id, bots, or video.
+    Broadcasts the updated meeting state to all connected WebSocket clients.
+    """
+    print(f"🟩 [start_meeting] Called for org={org_id}, room={room_name}")
+
+    try:
+        cache_key = f"active_meeting:{org_id}:{room_name}"
+
+        # Fetch existing meeting state or initialize default
+        existing = cache.get(cache_key)
+        if not isinstance(existing, dict):
+            existing = {
+                "org_id": int(org_id),
+                "room_name": str(room_name),
+                "active_bot_ids": [],
+                "active_video_id": None,
+                "active_survey_id": None,
+                "last_updated": now().isoformat(),
+            }
+            print(f"⚠️ No existing meeting found, initializing default for {cache_key}")
+
+        # Mark meeting as active (not ended)
+        updated_state = {
+            **existing,
+            "ended": False,
+            "last_updated": now().isoformat(),
+        }
+
+        cache.set(cache_key, updated_state, timeout=60 * 60 * 10)
+        print(f"💾 Cached active meeting state for {cache_key}: {updated_state}")
+
+        # Broadcast to WebSocket group
+        channel_layer = get_channel_layer()
+        group_name = f"meeting_{org_id}_{room_name}"
+
+        async_to_sync(channel_layer.group_send)(
+            group_name,
+            {"type": "meeting_state_changed", "state": updated_state}
+        )
+
+        print(f"📡 Broadcasted start_meeting to {group_name}")
+        return JsonResponse({
+            "message": "Meeting started successfully",
+            "data": updated_state,
+        })
+
+    except Exception as e:
+        print(f"❌ Error in start_meeting: {e}")
+        return JsonResponse({"error": str(e)}, status=500)
+
+@csrf_exempt
+def get_meeting_end_state(request, org_id, room_name):
+    """
+    Returns whether the meeting is currently ended or active.
+    Useful for frontend initialization before WebSocket updates arrive.
+    """
+    print(f"🟢 [get_meeting_state] Request for org={org_id}, room={room_name}")
+
+    try:
+        cache_key = f"active_meeting:{org_id}:{room_name}"
+        existing = cache.get(cache_key)
+
+        if not isinstance(existing, dict):
+            print(f"⚠️ No meeting state found for {cache_key}, returning default ended=True")
+            return JsonResponse({"ended": True, "exists": False})
+
+        ended = existing.get("ended", True)
+        print(f"📦 Cached meeting state for {cache_key}: ended={ended}")
+        return JsonResponse({"ended": ended, "exists": True})
+
+    except Exception as e:
+        print(f"❌ Error in get_meeting_state: {e}")
+        return JsonResponse({"error": str(e)}, status=500)
+    
+@csrf_exempt
+def get_active_survey_id(request, org_id, room_name):
+    """
+    Returns the current active_survey_id for the given org_id and room_name.
+    Looks up the cache key 'active_meeting:{org_id}:{room_name}'.
+    If not found, returns active_survey_id=None.
+    """
+    print(f"🟨 [get_active_survey_id] Called for org={org_id}, room={room_name}")
+
+    try:
+        cache_key = f"active_meeting:{org_id}:{room_name}"
+        state = cache.get(cache_key)
+
+        if not isinstance(state, dict):
+            print(f"⚠️ No existing meeting found for {cache_key}")
+            return JsonResponse({
+                "message": "No active meeting found",
+                "active_survey_id": None,
+            })
+
+        active_survey_id = state.get("active_survey_id", None)
+        print(f"✅ Active survey ID for {cache_key}: {active_survey_id}")
+
+        return JsonResponse({
+            "message": "Active survey ID retrieved successfully",
+            "active_survey_id": active_survey_id,
+        })
+
+    except Exception as e:
+        print(f"❌ Error in get_active_survey_id: {e}")
+        return JsonResponse({"error": str(e)}, status=500)
+
+@csrf_exempt
+@require_POST
+def update_final_state(request, org_id, room_name):
+    """
+    Updates the active_survey_id for a given org_id and room_name.
+    Broadcasts the updated meeting state to all connected WebSocket clients.
+    """
+    print(f"🟦 [update_final_state] Called for org={org_id}, room={room_name}")
+
+    try:
+        body = json.loads(request.body.decode("utf-8"))
+        survey_id = body.get("survey_id")
+        if survey_id is None:
+            return JsonResponse({"error": "Missing 'survey_id' field"}, status=400)
+
+        cache_key = f"active_meeting:{org_id}:{room_name}"
+        existing_state = cache.get(cache_key)
+        if not isinstance(existing_state, dict):
+            existing_state = {
+                "org_id": int(org_id),
+                "room_name": str(room_name),
+                "active_bot_ids": [],
+                "active_video_id": None,
+                "active_survey_id": None,
+                "last_updated": None,
+            }
+            print(f"⚠️ No existing meeting found, initializing new one for {cache_key}")
+
+        updated_state = existing_state.copy()
+        updated_state["active_survey_id"] = survey_id
+        updated_state["last_updated"] = now().isoformat()
+        cache.set(cache_key, updated_state, timeout=None)
+
+        print(f"✅ Updated active_survey_id for {cache_key}: {survey_id}")
+
+        # Broadcast update to WebSocket group
+        channel_layer = get_channel_layer()
+        group_name = f"meeting_{org_id}_{room_name}"
+
+        async_to_sync(channel_layer.group_send)(
+            group_name,
+            {
+                "type": "meeting_state_changed",
+                "state": updated_state,
+            }
+        )
+
+        print(f"📡 Broadcasted meeting_state_changed to {group_name}")
+        return JsonResponse({
+            "message": "Survey ID updated successfully",
+            "data": updated_state,
+        })
+
+    except Exception as e:
+        print(f"❌ Error in update_final_state: {e}")
+        return JsonResponse({"error": str(e)}, status=500)
+
+
 @csrf_exempt
 def get_video_state(request, org_id, room_name):
     """
@@ -3558,6 +4045,7 @@ def get_active_meeting_with_segments(request, org_id, room_name):
 
                     if seg.question_card:
                         q = seg.question_card
+                        print("CORRECT ANSER", q.correct_answers)
                         seg_data["question_card"] = {
                             "id": q.id,
                             "question": q.question,
@@ -3578,7 +4066,7 @@ def get_active_meeting_with_segments(request, org_id, room_name):
                 print(f"⚠️ Failed to fetch video segments or URL for {active_video_id}: {e}")
                 video_segments_data = []
                 video_url = None
-
+        
         return JsonResponse({
             "message": "Active meeting data retrieved",
             "data": {

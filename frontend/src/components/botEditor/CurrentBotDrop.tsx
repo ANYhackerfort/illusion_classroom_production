@@ -32,7 +32,7 @@ const CurrentBotDropZone: React.FC = () => {
       console.log("🧠 Active bot IDs:", activeBotIds);
 
       if (activeBotIds.length === 0) {
-        console.log("ℹ️ No active bots found in current meeting.");
+        console.log("No active bots found in current meeting.");
         setBots([]);
         return;
       }

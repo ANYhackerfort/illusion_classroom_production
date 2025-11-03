@@ -7,7 +7,7 @@ import { useEffect } from "react";
 interface SmartVideoPlayerProps {
   segments: VideoSegmentData[];
   meetingName: string | undefined;
-  videoRef: React.RefObject<HTMLVideoElement>;
+  videoRef: React.RefObject<HTMLVideoElement | null>;
   videoUrl: string | null;
   hasAccess: boolean;
 }

@@ -348,6 +348,8 @@ const VideoPlayerWithBar: React.FC = () => {
               displayType={currentQuestionCard.displayType}
               showWinner={currentQuestionCard.showWinner}
               live={currentQuestionCard.live}
+              correctAnswers={currentQuestionCard.correctAnswer}
+              id={currentQuestionCard.id}
             />
             </div>
           </div>

@@ -55,6 +55,16 @@ from .views import (
     join_room,
     generate_answers_bot,
     get_active_bots_video_name,
+    stop_meeting_complete,
+    update_final_state,
+    get_active_survey_id,
+    start_meeting_again,
+    get_meeting_end_state,
+    store_quatric_survey_answers,
+    get_all_quatric_survey_answers,
+    store_video_question_answers,
+    get_all_video_question_answers,
+    get_bot_answers,
 )
 
 urlpatterns = [
@@ -93,6 +103,7 @@ urlpatterns = [
     path("edit_video/<int:video_id>/<int:org_id>/<str:room_name>/", edit_video, name="edit_video"),
     path("delete_video/<int:video_id>/", delete_video, name="delete_video"),
     path("get_video_by_id/<int:video_id>/", get_video_by_id, name="get_video_by_id"),
+    path("store_video_question_answers/<int:org_id>/<str:room_name>/<int:question_id>/", store_video_question_answers, name="store_video_question_answers"),
 
     path("store_currently_playing/<str:meeting_name>/", store_currently_playing, name="store_currently_playing"),
 
@@ -129,7 +140,25 @@ urlpatterns = [
         get_active_bots_video_name,
         name="get_active_bots_video_name",
     ),
+    path(
+        "get_all_video_question_answers/<int:org_id>/<str:room_name>/",
+        get_all_video_question_answers,
+        name="get_all_video_question_answers",
+    ),
+    path(
+        "get_bot_answers/<int:org_id>/<str:room_name>/",
+        get_bot_answers,
+        name="get_bot_answers",
+    ),
+    
+    path("update_final_state/<int:org_id>/<str:room_name>/", update_final_state, name="edit_bot"),
+    path("stop_meeting_complete/<int:org_id>/<str:room_name>/", stop_meeting_complete, name="edit_bot"),
+    path("get_active_survey_id/<int:org_id>/<str:room_name>/", get_active_survey_id, name="get_active_survey_by_id"),
+    path("start_meeting_again/<int:org_id>/<str:room_name>/", start_meeting_again, name="start_meeting"),
+    path("get_meeting_state/<int:org_id>/<str:room_name>/", get_meeting_end_state, name="get_meeting_state"),
+    path("store_quatric_survey_answers/<int:org_id>/<str:room_name>/", store_quatric_survey_answers, name="store_quatric_survey_answers"),
 
+    path("get_all_quatric_survey_answers/<int:org_id>/<str:room_name>/", get_all_quatric_survey_answers, name="get_all_quatric_survey_answers"),
     path("update_active_meeting/<int:org_id>/<str:room_name>/", update_or_create_active_meeting, name="update_active_meeting"),
     path("get_active_meeting/<int:org_id>/<str:room_name>/", get_active_meeting, name="get_active_meeting"),
     path("pause_video_state/<int:org_id>/<str:room_name>/", pause_video_state, name="pause_video_state"),

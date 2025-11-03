@@ -312,11 +312,7 @@ export const saveQuestionToBackend = async (
         displayType: questionData.displayType,
         showWinner: questionData.showWinner,
         live: questionData.live,
-        correctAnswers: questionData.correctAnswer
-          ? Array.isArray(questionData.correctAnswer)
-            ? questionData.correctAnswer
-            : [questionData.correctAnswer]
-          : [], // ✅ include correctAnswers if present
+        correctAnswers: questionData.correctAnswer,
       },
       { withCredentials: true },
     );
@@ -691,4 +687,237 @@ export const updateVideoState = async (
     { withCredentials: true },
   );
   return response.data;
+};
+
+export const updateFinalState = async (
+  orgId: number,
+  roomName: string,
+  payload: { survey_id: number | string },
+): Promise<{
+  message: string;
+  data: {
+    org_id: number;
+    room_name: string;
+    active_survey_id: number | string;
+    active_video_id: number | string | null;
+    active_bot_ids: (number | string)[];
+    last_updated: string;
+  };
+}> => {
+  const response = await axiosClient.post(
+    `/api/auth/update_final_state/${encodeURIComponent(orgId)}/${encodeURIComponent(roomName)}/`,
+    payload,
+    { withCredentials: true },
+  );
+  return response.data;
+};
+
+export const stopMeetingComplete = async (
+  orgId: number,
+  roomName: string,
+): Promise<{
+  message: string;
+  data: {
+    org_id: number;
+    room_name: string;
+    active_survey_id: number | string | null;
+    active_video_id: number | string | null;
+    active_bot_ids: (number | string)[];
+    ended: boolean;
+    last_updated: string;
+  };
+}> => {
+  const response = await axiosClient.post(
+    `/api/auth/stop_meeting_complete/${encodeURIComponent(orgId)}/${encodeURIComponent(roomName)}/`,
+    {}, // no payload needed
+    { withCredentials: true },
+  );
+  return response.data;
+};
+
+export const getActiveSurveyId = async (
+  orgId: number,
+  roomName: string
+): Promise<{
+  message: string;
+  active_survey_id: string | number | null;
+}> => {
+  const response = await axiosClient.get(
+    `/api/auth/get_active_survey_id/${encodeURIComponent(orgId)}/${encodeURIComponent(roomName)}/`,
+    { withCredentials: true }
+  );
+  return response.data;
+};
+
+export const startMeeting = async (
+  orgId: number,
+  roomName: string,
+): Promise<{
+  message: string;
+  data: {
+    org_id: number;
+    room_name: string;
+    active_bot_ids: number[];
+    active_video_id: number | null;
+    active_survey_id: string | null;
+    ended: boolean;
+    last_updated: string;
+  };
+}> => {
+  try {
+    const response = await axiosClient.post(
+      `/api/auth/start_meeting_again/${encodeURIComponent(orgId)}/${encodeURIComponent(roomName)}/`,
+      {},
+      { withCredentials: true },
+    );
+    console.log("🟩 [start_meeting] Success:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("❌ [start_meeting] Error:", error);
+    throw error;
+  }
+};
+
+export const getMeetingState = async (orgId: number, roomName: string) => {
+  try {
+    const response = await axiosClient.get(
+      `/api/auth/get_meeting_state/${encodeURIComponent(orgId)}/${encodeURIComponent(roomName)}/`,
+      { withCredentials: true },
+    );
+    console.log("🟢 [get_meeting_state]:", response.data);
+    return response.data;
+  } catch (err) {
+    console.error("❌ [get_meeting_state] Error:", err);
+    return { ended: true, exists: false };
+  }
+};
+
+export const storeQualtricSurveyAnswers = async (
+  orgId: number,
+  meetingName: string,
+  participantName: string,
+  answers: Record<string, any>,
+): Promise<{ ok: boolean; message: string }> => {
+  try {
+    const response = await axiosClient.post(
+      `/api/auth/store_quatric_survey_answers/${encodeURIComponent(orgId)}/${encodeURIComponent(meetingName)}/`,
+      {
+        participant_name: participantName,
+        answers,
+      },
+      { withCredentials: true },
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error("❌ Failed to store Qualtrics survey answers:", error);
+    return { ok: false, message: error.message || "Request failed" };
+  }
+};
+
+export const getAllQualtricSurveyAnswers = async (
+  orgId: number,
+  meetingName: string,
+): Promise<{
+  ok: boolean;
+  participants?: Array<{
+    participant: string;
+    count: number;
+    answers: {
+      timestamp: string;
+      answers: Record<string, any>;
+    }[];
+  }>;
+  message?: string;
+}> => {
+  try {
+    const response = await axiosClient.get(
+      `/api/auth/get_all_quatric_survey_answers/${encodeURIComponent(orgId)}/${encodeURIComponent(meetingName)}/`,
+      { withCredentials: true },
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error("❌ Failed to fetch Qualtrics survey answers:", error);
+    return { ok: false, message: error.message || "Request failed" };
+  }
+};
+
+export const storeVideoQuestionAnswers = async (
+  orgId: number,
+  roomName: string,
+  questionId: string | number,
+  participantName: string,
+  answers: Record<string, any>,
+): Promise<{ ok: boolean; message: string }> => {
+  try {
+    const response = await axiosClient.post(
+      `/api/auth/store_video_question_answers/${encodeURIComponent(orgId)}/${encodeURIComponent(roomName)}/${encodeURIComponent(questionId)}/`,
+      {
+        participant_name: participantName,
+        answers,
+      },
+      { withCredentials: true },
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error("❌ Failed to store video question answers:", error);
+    return { ok: false, message: error.message || "Request failed" };
+  }
+};
+
+export const getAllVideoQuestionAnswers = async (
+  orgId: number,
+  roomName: string
+): Promise<any> => {
+  try {
+    const response = await axiosClient.get(
+      `/api/auth/get_all_video_question_answers/${encodeURIComponent(orgId)}/${encodeURIComponent(roomName)}/`,
+      { withCredentials: true },
+    );
+    console.log("🎬 [get_all_video_question_answers]", response.data);
+    return response.data;
+  } catch (error: any) {
+    console.error("❌ Failed to fetch video question answers:", error);
+    return { ok: false, participants: [] };
+  }
+};
+
+export interface BotAnswerEntry {
+  question_id: number;
+  question: string | null; // resolved by backend
+  answers: string[];
+}
+
+// Each bot with answers
+export interface BotWithAnswers {
+  id: number;
+  name: string;
+  img_url: string | null;
+  answers: BotAnswerEntry[];
+}
+
+// Full API response
+export interface GetBotAnswersResponse {
+  bots: BotWithAnswers[];
+}
+
+export const getBotAnswers = async (
+  org_id: number,
+  roomName: string
+): Promise<GetBotAnswersResponse> => {
+  try {
+    console.log(`📡 Fetching bot answers for org=${org_id}, room=${roomName}`);
+
+    const response = await axiosClient.get<GetBotAnswersResponse>(
+      `/api/auth/get_bot_answers/${encodeURIComponent(org_id)}/${encodeURIComponent(
+        roomName
+      )}/`,
+      { withCredentials: true }
+    );
+
+    console.log("✅ Bot answers response:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("❌ Failed to fetch bot answers:", error);
+    throw error;
+  }
 };

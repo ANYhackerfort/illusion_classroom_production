@@ -186,7 +186,7 @@ const Display: React.FC<DisplayProps> = ({
         } else {
           setCurrentQuestionCard(null);
 
-          if (videoRef.current && !isPlayingRef.current) {
+          if (videoRef.current && !videoStoppedRef.current) {
             videoRef.current.play();
             // setIsPlaying(true);
             isPlayingRef.current = true;

@@ -11,15 +11,16 @@ import "./VideoSegmentRenderer.css";
 import MissionControl from "./components/MeetingControl";
 import LiquidGlassBotGrid from "./components/LiquidGlassBotGrid";
 import NoAccessJoinGate from "./components/NoAccessJoinGate";
-import { Survey } from "../../indexDB/surveyStorage"; // import getAllSurveys, { saveSurvey } from "../../indexDB/surveyStorage";
-// import { getAllSurveys, saveSurvey } from "../../indexDB/surveyStorage";
-// import { getAllSurveys } from "../../indexDB/surveyStorage";
+import { Survey } from "../../indexDB/surveyStorage";
 import SurveyRenderer from "../../finder/editedVideoStorage/SurveyRenderer";
 import {
   getActiveMeetingWithSegments,
   getVideoState,
+  getActiveSurveyId,
+  getSurveyById,
 } from "../../components/videoDisplayer/api/save";
 import { useMainMeetingWebSocket } from "../../api/MainSocket";
+import { getMeetingState } from "../../components/videoDisplayer/api/save";
 
 export function getVideoTimeBeforeSegment(
   segments: VideoSegmentData[],
@@ -43,110 +44,164 @@ const VideoSegmentRenderer: React.FC = () => {
   const { roomName, org_id } = useParams();
   const [adminAccess, setAdminAccess] = useState<boolean | null>(null);
   const [participantAccess, setParticipantAccess] = useState<boolean>(false);
-  const videoRef = useRef<HTMLVideoElement>(
-    null,
-  ) as React.RefObject<HTMLVideoElement>;
+  const [activeSurvey, setActiveSurvey] = useState<Survey | null>(null);
+
+  const videoRef = useRef<HTMLVideoElement | null>(null);
   const currentTimeRef = useRef<number>(0);
   const segmentsRef = useRef<VideoSegmentData[]>([]);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
-
-  // const [endingID, setEndingID] = useState<string | null>(null);
-  const [activeSurvey] = useState<Survey | null>(null);
-
   const orgIdNum = org_id ? parseInt(org_id, 10) : NaN;
   const videoStoppedRef = useRef(true);
   const isPlayingRef = useRef(false);
+  const { socket } = useMainMeetingWebSocket();
 
-  const { socket } = useMainMeetingWebSocket();    
-  
+  // ============================================================
+  // 🟢 Fetch active survey
+  // ============================================================
+  // ============================================================
+// 🟢 Initial load: fetch active survey once
+// ============================================================
   useEffect(() => {
-      console.log(socket);
-      if (!socket) return;
-  
-      const handleMessage = async (event: MessageEvent) => {
-        console.log("HANDLE MESSAGE CALLED");
-        try {
-          const msg = JSON.parse(event.data);
-          console.log("__________________________");
-          console.log("GOT MESSAGE", msg);
-  
-          // 🎬 1️⃣ Sync video time and stop/play state updates
-          if (msg.type === "sync_update" && msg.state) {
-            const newTime = msg.state.current_time;
-            const newStopped = msg.state.stopped;
-  
-            // If time is off by ≥ 1 second, resync
-            if (Math.abs(newTime - currentTimeRef.current) >= 0.5) {
-              console.log(
-                `⚙️ Syncing time: local=${currentTimeRef.current.toFixed(2)} → server=${newTime.toFixed(2)}`,
-              );
-              currentTimeRef.current = newTime;
-            }
-  
-            // Update stopped state if changed
-            if (videoStoppedRef.current !== newStopped) {
-              console.log(`🎬 Updating stopped state → ${newStopped}`);
-              videoStoppedRef.current = newStopped;
-              
-              // setVideoStopped(newStopped);
-            }
-          }
-  
-          // 🟡 2️⃣ Handle meeting state change broadcast
-          else if (msg.type === "meeting_state_changed") {
-            console.log(
-              "🔄 Meeting state changed — fetching new video + segments...",
-            );
-            try {
-              const result = await getActiveMeetingWithSegments(
-                Number(org_id),
-                roomName!,
-              );
-  
-              if (result) {
-                const { video_segments, video_url } = result;
-                const storedSegments = video_segments;
-  
-                console.log("🎥 New Video URL:", video_url);
-                console.log("🧩 Segments:", storedSegments);
-  
-                // Update state and refs
-                setSegments(storedSegments);
-                segmentsRef.current = storedSegments;
-                setVideoUrl(video_url);
-              } else {
-                console.warn("⚠️ No active meeting data returned.");
-              }
+    const fetchInitialSurvey = async () => {
+      if (!org_id || !roomName) return;
 
-              const videoState = await getVideoState(Number(org_id), roomName!);
-              currentTimeRef.current = videoState.current_time;
-              videoStoppedRef.current = videoState.stopped;
-            } catch (fetchErr) {
-              console.error("❌ Failed to refresh meeting data:", fetchErr);
-            }
-          }
-        } catch (err) {
-          console.error("Failed to parse WebSocket message:", err);
+      try {
+        // 🟢 Step 1: Check if the meeting is ended
+        const meetingState = await getMeetingState(parseInt(org_id), roomName);
+        console.log("🧩 Meeting state:", meetingState);
+
+        if (!meetingState.ended) {
+          console.log("🟩 Meeting is still active — skipping survey fetch.");
+          setActiveSurvey(null);
+          return;
         }
-      };
-  
-      socket.addEventListener("message", handleMessage);
-      return () => {
-        socket.removeEventListener("message", handleMessage);
-      };
-    }, [socket]);
-  
 
-  // ✅ Access check
+        // 🟥 Meeting is ended — proceed to load active survey
+        console.log("🟥 Meeting ended — fetching active survey...");
+        const res = await getActiveSurveyId(parseInt(org_id), roomName);
+        const activeId = res.active_survey_id;
+        console.log("🟢 Initial Active Survey ID:", activeId);
+
+        if (activeId) {
+          const survey = await getSurveyById(activeId);
+          console.log("📋 Loaded initial survey:", survey);
+          setActiveSurvey(survey);
+        } else {
+          setActiveSurvey(null);
+        }
+      } catch (err) {
+        console.error("❌ Failed to fetch initial survey:", err);
+        setActiveSurvey(null);
+      }
+    };
+
+    fetchInitialSurvey();
+  }, []); // ✅ runs once when component mounts
+
+
+  const fetchActiveSurvey = async () => {
+    if (!org_id || !roomName) return;
+    try {
+      const res = await getActiveSurveyId(parseInt(org_id), roomName);
+      const activeId = res.active_survey_id;
+      console.log("🟩 Active Survey ID:", activeId);
+
+      if (activeId) {
+        const survey = await getSurveyById(activeId);
+        console.log("📋 Loaded final survey:", survey);
+        setActiveSurvey(survey);
+      } else {
+        setActiveSurvey(null);
+      }
+    } catch (err) {
+      console.error("❌ Failed to fetch active survey:", err);
+    }
+  };
+
+  // ============================================================
+  // 🎬 WebSocket listener for meeting start/end & sync
+  // ============================================================
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleMessage = async (event: MessageEvent) => {
+      try {
+        const msg = JSON.parse(event.data);
+
+        // 🟡 Meeting state changed (ended or resumed)
+        if (msg.type === "meeting_state_changed" && msg.state) {
+          const { ended } = msg.state;
+          console.log("🛰️ [Meeting state update]: ended =", ended);
+
+          if (ended) {
+            console.log("🟥 Meeting ended detected — fetching active survey...");
+            await fetchActiveSurvey();
+            return;
+          } else {
+            console.log("🟩 Meeting resumed — returning to video view");
+            setActiveSurvey(null);
+          }
+
+          // Refresh video & segments as usual
+          console.log("🔄 Refreshing active meeting data...");
+          try {
+            const result = await getActiveMeetingWithSegments(
+              Number(org_id),
+              roomName!,
+            );
+            if (result) {
+              const { video_segments, video_url } = result;
+              setSegments(video_segments);
+              segmentsRef.current = video_segments;
+              setVideoUrl(video_url);
+            }
+            const videoState = await getVideoState(Number(org_id), roomName!);
+            currentTimeRef.current = videoState.current_time;
+            videoStoppedRef.current = videoState.stopped;
+          } catch (fetchErr) {
+            console.error("❌ Failed to refresh meeting data:", fetchErr);
+          }
+        }
+
+        // 🎬 Sync video time / play state
+        else if (msg.type === "sync_update" && msg.state) {
+          const newTime = msg.state.current_time;
+          const newStopped = msg.state.stopped;
+
+          if (Math.abs(newTime - currentTimeRef.current) >= 0.5) {
+            console.log(
+              `⚙️ Syncing time: local=${currentTimeRef.current.toFixed(
+                2,
+              )} → server=${newTime.toFixed(2)}`,
+            );
+            currentTimeRef.current = newTime;
+          }
+
+          if (videoStoppedRef.current !== newStopped) {
+            console.log(`🎬 Updating stopped state → ${newStopped}`);
+            videoStoppedRef.current = newStopped;
+            if (newStopped && videoRef.current) {
+              videoRef.current.pause();
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Failed to parse WebSocket message:", err);
+      }
+    };
+
+    socket.addEventListener("message", handleMessage);
+    return () => socket.removeEventListener("message", handleMessage);
+  }, [socket]);
+
+  // ============================================================
+  // 🧩 Access check & initial load
+  // ============================================================
   useEffect(() => {
     const verifyAccess = async () => {
       if (!roomName) return;
       try {
-        const result = await checkMeetingAccess(
-          orgIdNum,
-          roomName,
-        );
-
+        const result = await checkMeetingAccess(orgIdNum, roomName);
         setAdminAccess(result.admin_access);
       } catch (err) {
         console.error("Access check failed:", err);
@@ -156,7 +211,6 @@ const VideoSegmentRenderer: React.FC = () => {
     verifyAccess();
   }, []);
 
-  // setSegemnts, setVideoUrl
   useEffect(() => {
     const restoreLastControlledVideo = async () => {
       const result = await getActiveMeetingWithSegments(
@@ -166,15 +220,8 @@ const VideoSegmentRenderer: React.FC = () => {
 
       if (result) {
         const { video_segments, video_url } = result;
-
-        // Get video length directly from segments
-        const storedSegments = video_segments;
-
-        console.log("🎥 Video URL:", video_url);
-        console.log("🧩 Segments:", storedSegments);
-
-        setSegments(storedSegments);
-        segmentsRef.current = storedSegments;
+        setSegments(video_segments);
+        segmentsRef.current = video_segments;
         setVideoUrl(video_url);
       }
 
@@ -186,77 +233,49 @@ const VideoSegmentRenderer: React.FC = () => {
     restoreLastControlledVideo();
   }, []);
 
+  // ============================================================
+  // ⏱️ Manual frame loop for video/question sync
+  // ============================================================
   useEffect(() => {
     const interval = setInterval(() => {
       if (!videoStoppedRef.current) {
-        currentTimeRef.current += 0.16; // advance time by 0.16 seconds per tick
+        currentTimeRef.current += 0.16;
       }
 
       if (!videoUrl) return;
-      if (videoStoppedRef.current) {
-        const now = currentTimeRef.current;
-        // 🎯 Find active segment using latest metaData
-        const activeSegment = segmentsRef.current.find((seg) => {
-          const [start, end] = seg.source;
-          return now >= start && now < end;
-        });
+      const now = currentTimeRef.current;
+      const activeSegment = segmentsRef.current.find((seg) => {
+        const [start, end] = seg.source;
+        return now >= start && now < end;
+      });
 
-        if (videoRef.current) {
-          videoRef.current.currentTime = getVideoTimeBeforeSegment(
-            segmentsRef.current,
-            activeSegment!,
-            currentTimeRef.current,
-          );
+      if (videoRef.current) {
+        const newTime = getVideoTimeBeforeSegment(
+          segmentsRef.current,
+          activeSegment!,
+          currentTimeRef.current,
+        );
+
+        if (
+          Math.abs(videoRef.current.currentTime - newTime) > 0.3 &&
+          activeSegment &&
+          !activeSegment.isQuestionCard
+        ) {
+          videoRef.current.currentTime = newTime;
         }
+      }
+
+      if (activeSegment?.isQuestionCard && activeSegment.questionCardData) {
         if (videoRef.current && isPlayingRef.current) {
           videoRef.current.pause();
           isPlayingRef.current = false;
         }
-
-        if (activeSegment?.isQuestionCard && activeSegment.questionCardData) {
-          setCurrentQuestionCard(activeSegment.questionCardData);
-        } else {
-          setCurrentQuestionCard(null);
-        }
+        setCurrentQuestionCard(activeSegment.questionCardData);
       } else {
-        // ⏱️ Advance custom time by 100ms
-        // currentTimeRef.current += 0.1;
-        const now = currentTimeRef.current;
-
-        // 🎯 Find active segment using latest metaData
-        const activeSegment = segmentsRef.current.find((seg) => {
-          const [start, end] = seg.source;
-          return now >= start && now < end;
-        });
-
-        if (videoRef.current) {
-          const newTime = getVideoTimeBeforeSegment(
-            segmentsRef.current,
-            activeSegment!,
-            currentTimeRef.current,
-          );
-          if (
-            Math.abs(videoRef.current.currentTime - newTime) > 0.3 &&
-            activeSegment &&
-            !activeSegment.isQuestionCard
-          ) {
-            videoRef.current.currentTime = newTime;
-          }
-        }
-
-        if (activeSegment?.isQuestionCard && activeSegment.questionCardData) {
-          if (videoRef.current && isPlayingRef.current) {
-            videoRef.current.pause();
-            isPlayingRef.current = false;
-          }
-          setCurrentQuestionCard(activeSegment.questionCardData);
-        } else {
-          setCurrentQuestionCard(null);
-
-          if (videoRef.current && !isPlayingRef.current) {
-            videoRef.current.play();
-            isPlayingRef.current = true;
-          }
+        setCurrentQuestionCard(null);
+        if (videoRef.current && !videoStoppedRef.current) {
+          videoRef.current.play();
+          isPlayingRef.current = true;
         }
       }
     }, 160);
@@ -264,9 +283,12 @@ const VideoSegmentRenderer: React.FC = () => {
     return () => clearInterval(interval);
   }, [videoUrl]);
 
+  // ============================================================
+  // 🧱 Render
+  // ============================================================
   return (
     <div className="video-layout-wrapper">
-      <LiquidGlassBotGrid/>
+      <LiquidGlassBotGrid />
       <div className="video-container">
         {adminAccess && <MissionControl />}
 
@@ -285,9 +307,9 @@ const VideoSegmentRenderer: React.FC = () => {
             style={{
               display: "flex",
               justifyContent: "center",
-              alignItems: "center", // ⬅️ centers vertically
+              alignItems: "center",
               width: "100%",
-              height: "100%", // ⬅️ let parent container height control this
+              height: "100%",
             }}
           >
             <div
@@ -298,21 +320,16 @@ const VideoSegmentRenderer: React.FC = () => {
                 backgroundColor: "#f9fafb",
                 boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
                 padding: "1.5rem",
-                overflow: "auto", // ⬅️ scrolling inside the box
+                overflow: "auto",
                 display: "flex",
                 justifyContent: "center",
-                alignItems: "flex-start", // ⬅️ survey starts at top, scrolls down
+                alignItems: "flex-start",
               }}
             >
-              <SurveyRenderer survey={activeSurvey} />
+              <SurveyRenderer survey={activeSurvey}/>
             </div>
           </div>
         ) : (
-          // 🎥 fallback...
-
-          // 🎥 fallback...
-
-          // 🎥 Fallback: show SmartVideoPlayer + QuestionCards
           <>
             <SmartVideoPlayer
               hasAccess={adminAccess!}
@@ -330,7 +347,6 @@ const VideoSegmentRenderer: React.FC = () => {
                     seg.questionCardData?.id === currentQuestionCard.id,
                 );
                 if (segmentIndex === -1) return null;
-
                 const segment = segments[segmentIndex];
                 const [start, end] = segment.source;
 
@@ -346,9 +362,10 @@ const VideoSegmentRenderer: React.FC = () => {
                       showWinner={currentQuestionCard.showWinner}
                       live={currentQuestionCard.live}
                       currentTimeRef={currentTimeRef}
-                      questionNumber={segmentIndex} // ✅ pass index
-                      start={start} // ✅ pass start time
-                      end={end} // ✅ pass end time
+                      questionNumber={segmentIndex}
+                      start={start}
+                      end={end}
+                      correctAnswers={currentQuestionCard.correctAnswer}
                     />
                   </div>
                 );

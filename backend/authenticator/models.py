@@ -129,11 +129,7 @@ class QuestionCard(models.Model):
         related_name="question_cards",
     )
     
-    correct_answers = models.JSONField(
-        null=True,
-        blank=True,
-        help_text="List of correct answers or a single correct value depending on type",
-    )
+    correct_answers = models.JSONField(default=list, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -185,6 +181,7 @@ class Bot(models.Model):
     def __str__(self):
         org_name = self.organization.name if self.organization else "No Org"
         return f"🤖 Bot {self.name} ({self.identifier}) — {org_name}"
+
 
 class Participant(models.Model):
     meeting = models.ForeignKey(
