@@ -865,31 +865,22 @@ def refresh_meeting_segments(request, meeting_name):
 @csrf_exempt
 @login_required
 def edit_video(request, video_id, org_id, room_name):
-    """
-    Update video metadata and segments.
-    Allowed if the user belongs to the same organization.
-    Broadcasts org update → "update" action.
-    """
     if request.method != "POST":
         return JsonResponse({"error": "Only POST allowed"}, status=405)
 
     try:
         data = json.loads(request.body)
         video_segments = data.get("VideoSegments", [])
-        new_timestamp = data.get("lastEdited")  # ✅ ISO string from frontend
+        new_timestamp = data.get("lastEdited")
         new_name = data.get("name")
         new_tags = data.get("tags", [])
+        new_thumbnail = data.get("thumbnail_url")  # ✅ may or may not exist
 
-        # ✅ Fetch video and org
-        video = Video.objects.filter(id=video_id).select_related("organization").first()
+        video = Video.objects.filter(id=video_id).select_related("organization", "meeting").first()
         if not video:
             return JsonResponse({"error": f"Video {video_id} not found."}, status=404)
 
         org = video.organization
-        if not org:
-            return JsonResponse({"error": "No organization linked to this video."}, status=400)
-
-        # ✅ Verify org membership
         user = request.user
         is_owner = hasattr(org, "owner") and org.owner == user
         is_member = hasattr(org, "members") and user in org.members.all()
@@ -899,18 +890,19 @@ def edit_video(request, video_id, org_id, room_name):
 
         print(f"🧩 Editing metadata and segments for video {video.id} in org {org.name}")
 
-        # ✅ Delete old segments
+        # 🔁 Replace old segments
         VideoSegment.objects.filter(video=video).delete()
-
         new_segments = []
+
         for seg in video_segments:
             q_data = seg.get("questionCardData")
             question_card = None
             q_card_dict = None
+
             if seg.get("isQuestionCard") and q_data:
                 question_card = QuestionCard.objects.create(
-                    user=request.user,                # ✅ required field
-                    organization=org,                 # ✅ keep consistent
+                    user=request.user,
+                    organization=org,
                     question=q_data["question"],
                     answers=q_data["answers"],
                     difficulty=q_data["difficulty"],
@@ -918,7 +910,7 @@ def edit_video(request, video_id, org_id, room_name):
                     display_type=q_data.get("displayType"),
                     show_winner=q_data.get("showWinner"),
                     live=q_data.get("live"),
-                    correct_answers=q_data["correctAnswer"]
+                    correct_answers=q_data.get("correctAnswer", []),
                 )
                 q_card_dict = {
                     "id": str(question_card.id),
@@ -944,30 +936,51 @@ def edit_video(request, video_id, org_id, room_name):
                 "questionCardData": q_card_dict,
             })
 
-        # ✅ Update timestamp
-        from django.utils import timezone
         from django.utils.dateparse import parse_datetime
-
         if new_timestamp:
             parsed = parse_datetime(new_timestamp)
-            video.created_at = parsed if parsed else timezone.now()
+            video.created_at = parsed if parsed else now()
         else:
-            video.created_at = timezone.now()
+            video.created_at = now()
 
-        # ✅ Update name/tags if provided
         if new_name:
             video.name = new_name.strip()
         if new_tags:
             video.tags = new_tags
+        if new_thumbnail is not None:
+            video.thumbnail_url = new_thumbnail
 
-        video.save(update_fields=["created_at", "name", "tags"])
-        cache.set(f"video_segments:{video.id}", new_segments, timeout=60 * 5)
+        video.save(update_fields=["created_at", "name", "tags", "thumbnail_url"])
 
-        # ✅ Invalidate both user + org cache
-        cache.delete_pattern(f"user_videos:*:{org.id}:*")
-        cache.delete_pattern(f"org_videos:*:{org.id}*")
+        # ✅ Build absolute URLs (consistent with get_video_by_id)
+        if video.url and not video.url.startswith("http"):
+            video_url = request.build_absolute_uri(
+                os.path.join(settings.MEDIA_URL, video.url)
+            ).replace("\\", "/")
+        else:
+            video_url = video.url
 
-        # ✅ Broadcast update event to org group
+        if video.thumbnail_url and not video.thumbnail_url.startswith("http"):
+            thumbnail_url = request.build_absolute_uri(
+                os.path.join(settings.MEDIA_URL, video.thumbnail_url)
+            ).replace("\\", "/")
+        else:
+            thumbnail_url = video.thumbnail_url
+
+        cache.set(
+            f"video:{video.id}",
+            {
+                "id": video.id,
+                "name": video.name,
+                "url": video.url,
+                "thumbnail_url": thumbnail_url,
+                "organization_id": org.id,
+                "meeting_id": video.meeting.id if video.meeting else None,
+            },
+            timeout=600,
+        )
+        cache.delete(f"org_videos:{org.id}")
+
         channel_layer = get_channel_layer()
         async_to_sync(channel_layer.group_send)(
             f"org_{org.id}_updates",
@@ -975,45 +988,22 @@ def edit_video(request, video_id, org_id, room_name):
                 "type": "org_update",
                 "category": "video",
                 "action": "update",
-                "payload": {"id": str(video.id)},
-            },
-        )
-        
-        cache_key = f"active_meeting:{org_id}:{room_name}"
-
-        existing = cache.get(cache_key)
-        if isinstance(existing, dict):
-            existing["last_updated"] = now().isoformat()
-        else:
-            # fallback if meeting not yet initialized
-            existing = {
-                "org_id": int(org_id),
-                "room_name": str(room_name),
-                "active_bot_ids": [],
-                "active_video_id": video.id,
-                "active_survey_id": None,
-                "last_updated": now().isoformat(),
-            }
-
-        cache.set(cache_key, existing, timeout=60 * 60 * 10)
-        
-        async_to_sync(channel_layer.group_send)(
-            f"meeting_{org_id}_{room_name}",
-            {
-                "type": "meeting_state_changed",
-                "state": existing,
+                "payload": {"id": video.id},
             },
         )
 
+        print(f"📡 Sent WebSocket update for edited video {video.id}")
+
+        # ✅ Return updated metadata for frontend
         return JsonResponse({
-            "message": "Video metadata and segments updated successfully.",
+            "message": "Video updated successfully.",
             "lastEdited": video.created_at.isoformat(),
             "name": video.name,
             "tags": video.tags or [],
+            "video_url": video_url,
+            "thumbnail_url": thumbnail_url,
         }, status=200)
 
-    except json.JSONDecodeError:
-        return JsonResponse({"error": "Invalid JSON payload."}, status=400)
     except Exception as e:
         print("❌ Error in edit_video:", e)
         return JsonResponse({"error": str(e)}, status=500)
@@ -1078,22 +1068,43 @@ def get_video_by_id(request, video_id):
                 "questionCardData": q_data,
             })
 
+        # ✅ Convert stored relative paths into absolute URLs
+        from django.conf import settings
+        import os
+
+        # If the video.url is relative, prepend MEDIA_URL
+        if video.url and not video.url.startswith("http"):
+            video_url = request.build_absolute_uri(
+                os.path.join(settings.MEDIA_URL, video.url)
+            ).replace("\\", "/")
+        else:
+            video_url = video.url
+
+        # Same logic for thumbnail
+        if video.thumbnail_url and not video.thumbnail_url.startswith("http"):
+            thumbnail_url = request.build_absolute_uri(
+                os.path.join(settings.MEDIA_URL, video.thumbnail_url)
+            ).replace("\\", "/")
+        else:
+            thumbnail_url = video.thumbnail_url
+
         # ✅ Build metadata for frontend
         metadata = {
             "id": str(video.id),
             "videoName": video.name or "Untitled Video",
             "videoTags": video.tags or [],
-            "videoLength": sum(s.source_end - s.source_start for s in video.segments.all()),
+            "videoLength": sum(
+                s.source_end - s.source_start for s in video.segments.all()
+            ),
             "questionCards": segments_data,
             "savedAt": video.created_at.isoformat(),
-            "videoUrl": request.build_absolute_uri(video.url),
+            "videoUrl": video_url,
             "organization_id": str(video.organization.id),
             "individual": individual,
-            "thumbnail_url": (
-                request.build_absolute_uri(video.thumbnail_url)
-                if video.thumbnail_url else None
+            "thumbnail_url": thumbnail_url,
+            "associated_meeting_id": (
+                str(video.meeting.id) if video.meeting else None
             ),
-            "associated_meeting_id": str(video.meeting.id) if video.meeting else None,  # ✅ added
         }
 
         print(f"🎬 Returned metadata for video {video.id} ({video.name})")
@@ -1427,60 +1438,54 @@ import subprocess
 @login_required
 def store_video(request, org_id, meeting_name):
     """
-    Handle video upload:
-    - Saves file + thumbnail
-    - Creates Video + base segment
-    - Broadcasts org update ("create")
-    - Clears both user and org caches
-    - Returns meeting_id in response
+    Create and store a new Video (mirrors store_bot behavior):
+    - Saves under MEDIA_ROOT/videos/<user>/<meeting>/
+    - Stores relative paths in DB
+    - Returns full public URLs in API response
     """
     if request.method != "POST":
-        return JsonResponse({"error": "Only POST requests are allowed."}, status=405)
+        return JsonResponse({"error": "POST required"}, status=405)
 
     try:
+        user = request.user
+
+        # ✅ Verify organization and membership
+        organization = Organization.objects.filter(id=org_id).first()
+        if not organization:
+            return JsonResponse({"error": "Organization not found"}, status=404)
+        if not user_in_org(user, organization):
+            return JsonResponse({"error": "User not part of this organization"}, status=403)
+
+        # ✅ Verify meeting
+        meeting = Meeting.objects.filter(name=meeting_name, organization=organization).first()
+        if not meeting:
+            return JsonResponse({"error": "Meeting not found"}, status=404)
+
+        # ✅ Extract POST data and files
         video_file = request.FILES.get("video_file")
         video_name = request.POST.get("video_name") or (video_file.name if video_file else None)
         tags_json = request.POST.get("tags", "[]")
+
+        if not video_file or not video_name:
+            return JsonResponse({"error": "Missing video_file or video_name."}, status=400)
 
         try:
             tags = json.loads(tags_json)
         except json.JSONDecodeError:
             tags = []
 
-        print(f"✅ Received video: {video_name}")
-        print(f"✅ Meeting name: {meeting_name}")
-        print(f"✅ Org ID: {org_id}")
-        print(f"✅ Tags: {tags}")
+        # ✅ Build file save path — identical to store_bot
+        user_email = user.email or "unknown_user"
+        safe_meeting = meeting_name.replace("/", "_")
 
-        if not video_file or not video_name:
-            return JsonResponse({"error": "Missing video_file or video_name."}, status=400)
-
-        # ✅ Get org + meeting
-        organization = Organization.objects.filter(id=org_id).first()
-        if not organization:
-            return JsonResponse({"error": f"Organization {org_id} not found."}, status=404)
-
-        meeting = Meeting.objects.filter(name=meeting_name, organization=organization).first()
-        if not meeting:
-            return JsonResponse({"error": f"Meeting '{meeting_name}' not found."}, status=404)
-
-        # ✅ Verify user belongs to org
-        user = request.user
-        is_owner = hasattr(organization, "owner") and organization.owner == user
-        is_member = hasattr(organization, "members") and user in organization.members.all()
-        if not (is_owner or is_member):
-            return JsonResponse({"error": "User not part of this organization."}, status=403)
-
-        # ✅ Save file
-        user_email = request.user.email
-        base_storage_path = f"videos/{user_email}/{meeting_name}/"
+        base_storage_path = os.path.join("videos", user_email, safe_meeting)
         os.makedirs(os.path.join(settings.MEDIA_ROOT, base_storage_path), exist_ok=True)
 
-        file_root, file_ext = os.path.splitext(video_name)
+        # ✅ Ensure unique filename
+        file_root, file_ext = os.path.splitext(video_file.name)
         counter = 1
-        final_name = video_name
+        final_name = video_file.name
         full_path = os.path.join(settings.MEDIA_ROOT, base_storage_path, final_name)
-
         while os.path.exists(full_path):
             final_name = f"{file_root}_{counter}{file_ext}"
             full_path = os.path.join(settings.MEDIA_ROOT, base_storage_path, final_name)
@@ -1488,72 +1493,90 @@ def store_video(request, org_id, meeting_name):
 
         storage_path = os.path.join(base_storage_path, final_name)
 
+        # ✅ Write file to disk
         with open(full_path, "wb+") as dest:
             for chunk in video_file.chunks():
                 dest.write(chunk)
-        print(f"📦 Saved video file to {full_path}")
 
-        # ✅ Generate thumbnail
+        # ✅ Store only the RELATIVE path in DB
+        relative_video_path = storage_path.replace("\\", "/")
+
+        # ✅ Build full public URL for response
+        video_url = request.build_absolute_uri(
+            os.path.join(settings.MEDIA_URL, relative_video_path)
+        ).replace("\\", "/")
+
+        # ✅ Generate thumbnail (with ffmpeg fix)
         thumbnail_name = f"{file_root}_thumb.jpg"
         thumbnail_path = os.path.join(settings.MEDIA_ROOT, base_storage_path, thumbnail_name)
-
         try:
             subprocess.run([
-                "ffmpeg", "-y", "-i", full_path, "-ss", "00:00:01.000",
-                "-vframes", "1", "-q:v", "2", thumbnail_path
+                "ffmpeg", "-y",
+                "-i", full_path,
+                "-ss", "00:00:01.000",
+                "-frames:v", "1",
+                "-update", "1",
+                "-q:v", "2",
+                "-f", "image2",
+                thumbnail_path
             ], check=True)
-            print(f"🖼️ Thumbnail generated: {thumbnail_path}")
+            image_url = request.build_absolute_uri(
+                os.path.join(settings.MEDIA_URL, base_storage_path, thumbnail_name)
+            ).replace("\\", "/")
+            print(f"🖼️ Thumbnail generated successfully: {image_url}")
         except subprocess.CalledProcessError as e:
             print("⚠️ Failed to generate thumbnail:", e)
-            thumbnail_path = None
+            image_url = None
 
-        # ✅ Optional AI description
-        frames = VideoDescriber.sample_frames(full_path)
-        description = VideoDescriber.generate_description_from_frames(frames)
-
-        # ✅ Create DB record
+        # ✅ Create Video record (relative paths only)
         video = Video.objects.create(
             meeting=meeting,
             organization=organization,
             name=video_name,
-            url=f"{settings.MEDIA_URL}{storage_path}",
-            thumbnail_url=f"{settings.MEDIA_URL}{base_storage_path}{thumbnail_name}" if thumbnail_path else None,
-            description=description,
-            tags=tags or [],
+            url=relative_video_path,  # stored relative path
+            thumbnail_url=image_url.replace(request.build_absolute_uri(settings.MEDIA_URL), "")
+            if image_url else None,
+            description="none",
+            tags=tags,
         )
 
-        # ✅ Duration via ffprobe
+        # ✅ Extract duration with ffprobe
         try:
             result = subprocess.run(
                 [
                     "ffprobe", "-v", "error",
                     "-show_entries", "format=duration",
                     "-of", "default=noprint_wrappers=1:nokey=1",
-                    full_path
+                    full_path,
                 ],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
-                text=True
+                text=True,
             )
             duration = float(result.stdout.strip())
         except Exception as e:
             print("⚠️ Failed to get video duration:", e)
             duration = 0.0
 
-        # ✅ Create initial segment
+        # ✅ Create base segment (full length)
         VideoSegment.objects.create(
             video=video,
             source_start=0.0,
             source_end=duration,
             question_card=None,
         )
-        print(f"🎬 Created base segment [0, {duration}] for video {video.id}")
 
-        # ✅ Invalidate caches
-        cache.delete_pattern(f"user_videos:*:{organization.id}:*")
-        cache.delete_pattern(f"org_videos:*:{organization.id}*")
+        # ✅ Cache + WebSocket broadcast
+        cache.set(f"video:{video.id}", {
+            "id": video.id,
+            "name": video.name,
+            "url": video.url,
+            "thumbnail_url": image_url,
+            "organization_id": organization.id,
+            "meeting_id": meeting.id,
+        }, timeout=600)
+        cache.delete(f"org_videos:{organization.id}")
 
-        # ✅ Broadcast org update → "create"
         channel_layer = get_channel_layer()
         async_to_sync(channel_layer.group_send)(
             f"org_{organization.id}_updates",
@@ -1561,27 +1584,27 @@ def store_video(request, org_id, meeting_name):
                 "type": "org_update",
                 "category": "video",
                 "action": "create",
-                "payload": {"id": str(video.id)},
+                "payload": {"id": video.id},
             },
         )
 
-        print(f"📢 Sent org_update:create for org_{organization.id}")
-
-        # ✅ Return structured response
+        # ✅ Return same style response as store_bot
         return JsonResponse({
-            "message": "Video stored successfully.",
+            "message": "Video stored successfully",
             "video_id": video.id,
-            "video_name": video.name,
-            "storage_path": storage_path,
-            "thumbnail_url": video.thumbnail_url,
+            "name": video.name,
+            "video_url": video_url,  # full public URL
+            "thumbnail_url": image_url,
+            "organization_id": organization.id,
+            "meeting_id": meeting.id,
             "duration": duration,
-            "description": description,
-            "meeting_id": video.meeting.id if video.meeting else None,  # ✅ added
+            "description": "none",
         }, status=201)
 
     except Exception as e:
-        print("❌ Error in store_video:", e)
+        print("🔥 store_video error:", e)
         return JsonResponse({"error": str(e)}, status=500)
+
 
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
@@ -1669,6 +1692,16 @@ def delete_video(request, video_id):
     except Exception as e:
         print("❌ Error deleting video:", e)
         return JsonResponse({"error": str(e)}, status=500)
+
+def make_absolute_media_url(request, path):
+    """Return full absolute media URL for stored paths."""
+    if not path:
+        return None
+    if path.startswith("http"):
+        return path
+    return request.build_absolute_uri(
+        os.path.join(settings.MEDIA_URL, path)
+    ).replace("\\", "/")
     
 @csrf_exempt
 @login_required
@@ -1678,17 +1711,15 @@ def get_user_videos(request, org_id, meeting_name):
 
     try:
         user_email = request.user.email
-        cache_key = f"user_videos:{user_email}:{org_id}:{meeting_name}"
+        # cache_key = f"user_videos:{user_email}:{org_id}:{meeting_name}"
 
-        # ✅ Try Redis cache first
-        cached = cache.get(cache_key)
-        if cached:
-            print(f"📦 Cache hit for {cache_key}")
-            return JsonResponse({"videos": cached, "cached": True}, status=200)
+        # cached = cache.get(cache_key)
+        # if cached:
+        #     print(f"📦 Cache hit for {cache_key}")
+        #     return JsonResponse({"videos": cached, "cached": True}, status=200)
 
-        print(f"❌ Cache miss for {cache_key}, fetching from DB")
+        # print(f"❌ Cache miss for {cache_key}, fetching from DB")
 
-        # ✅ Validate org + meeting
         organization = Organization.objects.filter(id=org_id).first()
         if not organization:
             return JsonResponse({"error": f"Organization {org_id} not found."}, status=404)
@@ -1697,7 +1728,6 @@ def get_user_videos(request, org_id, meeting_name):
         if not meeting:
             return JsonResponse({"error": f"Meeting '{meeting_name}' not found."}, status=404)
 
-        # ✅ Prefetch segments and question cards
         videos = (
             Video.objects.filter(meeting=meeting, organization=organization)
             .prefetch_related("segments__question_card")
@@ -1729,11 +1759,9 @@ def get_user_videos(request, org_id, meeting_name):
                     "questionCardData": q_data,
                 })
 
-            full_video_url = request.build_absolute_uri(video.url)
-            full_thumbnail_url = (
-                request.build_absolute_uri(video.thumbnail_url)
-                if video.thumbnail_url else None
-            )
+            # ✅ Correct URL generation (same as get_video_by_id)
+            full_video_url = make_absolute_media_url(request, video.url)
+            full_thumbnail_url = make_absolute_media_url(request, video.thumbnail_url)
 
             videos_list.append({
                 "id": str(video.id),
@@ -1748,12 +1776,12 @@ def get_user_videos(request, org_id, meeting_name):
                 "thumbnail_url": full_thumbnail_url,
                 "organization_id": str(video.organization.id),
                 "individual": True,
-                "associated_meeting_id": str(video.meeting.id) if video.meeting else None,  # ✅ added
+                "associated_meeting_id": str(video.meeting.id) if video.meeting else None,
             })
 
-        cache.set(cache_key, videos_list, timeout=600)
+        # cache.set(cache_key, videos_list, timeout=600)
 
-        print(f"🎥 Returning {len(videos_list)} user videos with meeting IDs")
+        print(f"🎥 Returning {len(videos_list)} user videos with absolute URLs")
         return JsonResponse({"videos": videos_list, "cached": False}, status=200)
 
     except Exception as e:
@@ -1763,23 +1791,20 @@ def get_user_videos(request, org_id, meeting_name):
 @csrf_exempt
 @login_required
 def get_org_videos(request, org_id):
-    """
-    Fetch all videos belonging to an organization, across all meetings.
-    """
+    """Fetch all videos belonging to an organization, across all meetings."""
     if request.method != "GET":
         return JsonResponse({"error": "Only GET requests are allowed."}, status=405)
 
     try:
         user_email = request.user.email
-        cache_key = f"org_videos:{user_email}:{org_id}"
+        # cache_key = f"org_videos:{user_email}:{org_id}"
 
-        # ✅ Try Redis cache
-        cached = cache.get(cache_key)
-        if cached:
-            print(f"📦 Cache hit for {cache_key}")
-            return JsonResponse({"videos": cached, "cached": True}, status=200)
+        # cached = cache.get(cache_key)
+        # if cached:
+        #     print(f"📦 Cache hit for {cache_key}")
+        #     return JsonResponse({"videos": cached, "cached": True}, status=200)
 
-        print(f"❌ Cache miss for {cache_key}, fetching from DB")
+        # print(f"❌ Cache miss for {cache_key}, fetching from DB")
 
         organization = Organization.objects.filter(id=org_id).first()
         if not organization:
@@ -1816,12 +1841,11 @@ def get_org_videos(request, org_id):
                     "questionCardData": q_data,
                 })
 
-            full_video_url = request.build_absolute_uri(video.url)
-            full_thumbnail_url = (
-                request.build_absolute_uri(video.thumbnail_url)
-                if video.thumbnail_url else None
-            )
+            # ✅ Use same media URL normalization as get_video_by_id
+            full_video_url = make_absolute_media_url(request, video.url)
+            full_thumbnail_url = make_absolute_media_url(request, video.thumbnail_url)
 
+            print("THE FULL VIDEO URL IS", full_thumbnail_url)
             videos_list.append({
                 "id": str(video.id),
                 "videoName": video.name or "Untitled Video",
@@ -1836,18 +1860,17 @@ def get_org_videos(request, org_id):
                 "organization_id": str(video.organization.id),
                 "individual": False,
                 "meetingName": video.meeting.name if video.meeting else None,
-                "associated_meeting_id": str(video.meeting.id) if video.meeting else None,  # ✅ added
+                "associated_meeting_id": str(video.meeting.id) if video.meeting else None,
             })
 
-        cache.set(cache_key, videos_list, timeout=600)
+        # cache.set(cache_key, videos_list, timeout=600)
 
-        print(f"🏢 Returning {len(videos_list)} org videos with meeting IDs")
+        print(f"🏢 Returning {len(videos_list)} org videos with absolute URLs")
         return JsonResponse({"videos": videos_list, "cached": False}, status=200)
 
     except Exception as e:
         print("❌ Error in get_org_videos:", e)
         return JsonResponse({"error": str(e)}, status=500)
-
 
 @csrf_exempt
 @login_required
@@ -2387,14 +2410,14 @@ def get_all_question_cards(request, org_id):
         if not (is_owner or is_member):
             return JsonResponse({"error": "User is not part of this organization."}, status=403)
 
-        cache_key = f"org_question_cards:{org_id}"
+        # cache_key = f"org_question_cards:{org_id}"
 
-        # ✅ Check cache first
-        cached_data = cache.get(cache_key)
-        print(cached_data)
-        if cached_data:
-            print(f"⚡ Returning cached question cards for org {org_id}")
-            return JsonResponse(cached_data, status=200)
+        # # ✅ Check cache first
+        # cached_data = cache.get(cache_key)
+        # print(cached_data)
+        # if cached_data:
+        #     print(f"⚡ Returning cached question cards for org {org_id}")
+        #     return JsonResponse(cached_data, status=200)
 
         # ✅ Query DB
         question_cards = (
@@ -2432,7 +2455,7 @@ def get_all_question_cards(request, org_id):
         response_data = {"questions": question_list, "count": len(question_list)}
 
         # ✅ Cache it
-        cache.set(cache_key, response_data, CACHE_TIMEOUT)
+        # cache.set(cache_key, response_data, CACHE_TIMEOUT)
         print(f"💾 Cached {len(question_list)} question cards for org {org_id}")
 
         return JsonResponse(response_data, status=200)
@@ -2503,13 +2526,13 @@ def get_question_card_by_id(request, question_id):
         return JsonResponse({"error": "Only GET requests are allowed."}, status=405)
 
     try:
-        cache_key = f"question_card:{question_id}"
+        # cache_key = f"question_card:{question_id}"
 
-        # ✅ 1. Try cache first
-        cached_question = cache.get(cache_key)
-        if cached_question:
-            print(f"⚡ Returning cached QuestionCard {question_id}")
-            return JsonResponse(cached_question, status=200)
+        # # ✅ 1. Try cache first
+        # cached_question = cache.get(cache_key)
+        # if cached_question:
+        #     print(f"⚡ Returning cached QuestionCard {question_id}")
+        #     return JsonResponse(cached_question, status=200)
 
         # ✅ 2. Fetch from DB
         question = (
@@ -2548,7 +2571,7 @@ def get_question_card_by_id(request, question_id):
         }
 
         # ✅ 4. Cache the result
-        cache.set(cache_key, question_data, CACHE_TIMEOUT)
+        # cache.set(cache_key, question_data, CACHE_TIMEOUT)
         print(f"💾 Cached QuestionCard {question_id}")
 
         return JsonResponse(question_data, status=200)
@@ -3983,6 +4006,7 @@ def pause_video_state(request, org_id, room_name):
         print(f"❌ Error in pause_video_state: {e}")
         return JsonResponse({"error": str(e)}, status=500)
     
+
 @csrf_exempt
 def get_active_meeting_with_segments(request, org_id, room_name):
     """
@@ -3992,7 +4016,7 @@ def get_active_meeting_with_segments(request, org_id, room_name):
       - active_survey_id
       - active_bot_ids
       - last_updated
-      - video_url (from Video.url)
+      - video_url (absolute)
       - all associated video segments (with question card data if any)
     Returns "none found" if no meeting cache exists.
     """
@@ -4022,12 +4046,12 @@ def get_active_meeting_with_segments(request, org_id, room_name):
 
         if active_video_id:
             try:
-                # 🎥 Fetch video directly
+                # 🎥 Fetch video and ensure full absolute URL
                 video_obj = Video.objects.filter(id=active_video_id).first()
                 if video_obj:
-                    video_url = video_obj.url  # ✅ directly use url field
+                    video_url = make_absolute_media_url(request, video_obj.url)
 
-                # 🎬 Fetch all segments
+                # 🎬 Fetch all segments with question cards
                 segments = (
                     VideoSegment.objects
                     .filter(video_id=active_video_id)
@@ -4045,7 +4069,6 @@ def get_active_meeting_with_segments(request, org_id, room_name):
 
                     if seg.question_card:
                         q = seg.question_card
-                        print("CORRECT ANSER", q.correct_answers)
                         seg_data["question_card"] = {
                             "id": q.id,
                             "question": q.question,
@@ -4063,11 +4086,11 @@ def get_active_meeting_with_segments(request, org_id, room_name):
                 print(f"🎬 Retrieved {len(video_segments_data)} segments for video {active_video_id}")
 
             except Exception as e:
-                print(f"⚠️ Failed to fetch video segments or URL for {active_video_id}: {e}")
+                print(f"⚠️ Failed to fetch video or segments for {active_video_id}: {e}")
                 video_segments_data = []
                 video_url = None
-        
-        return JsonResponse({
+
+        response_data = {
             "message": "Active meeting data retrieved",
             "data": {
                 "org_id": int(org_id),
@@ -4076,10 +4099,13 @@ def get_active_meeting_with_segments(request, org_id, room_name):
                 "active_survey_id": active_survey_id,
                 "active_bot_ids": active_bot_ids,
                 "last_updated": last_updated,
-                "video_url": video_url,  # ✅ clean direct field
+                "video_url": video_url,  # ✅ Now absolute URL
                 "video_segments": video_segments_data,
             },
-        })
+        }
+
+        print(f"✅ Returning active meeting data with absolute video URL: {video_url}")
+        return JsonResponse(response_data, status=200)
 
     except Exception as e:
         print(f"🔥 Exception in get_active_meeting_with_segments: {e}")

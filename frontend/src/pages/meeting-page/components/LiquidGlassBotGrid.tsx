@@ -154,6 +154,7 @@ const LiquidGlassBotGrid: React.FC = () => {
     };
   }, [onPointerMove, onPointerUp]);
 
+  
   return (
     <div
       ref={containerRef}

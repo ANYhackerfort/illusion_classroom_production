@@ -172,7 +172,7 @@ const VideoDisplay: React.FC<VideoDisplayProps> = ({
       });
 
       // 🛰️ Step 2: Upload video to backend
-      const { video_id, storage_path, description, meeting_id } =
+      const { video_id, video_url, description, meeting_id, thumbnail_url } =
         await uploadVideoMetadata(
           Number(org_id),
           roomName!,
@@ -183,10 +183,9 @@ const VideoDisplay: React.FC<VideoDisplayProps> = ({
       currentMeetingIdRef.current = video_id;
 
       console.log("Generated description is", description);
-      console.log("✅ Uploaded video. Path:", storage_path);
+      console.log("✅ Uploaded video. Path:", video_url);
 
       // ✅ Compose full media URL (served by NGINX)
-      const videoUrl = `http://localhost:8081/media/${storage_path}`;
 
       // ✅ Step 3: Save metadata to IndexedDB
       const fileName = file.name;
@@ -204,10 +203,11 @@ const VideoDisplay: React.FC<VideoDisplayProps> = ({
           },
         ],
         savedAt: new Date().toISOString(),
-        videoUrl,
+        videoUrl: video_url,
         organization_id: org_id!,
         individual: true,
         associated_meeting_id: meeting_id!,
+        thumbnail_url: thumbnail_url,
       };
 
       // ✅ Update refs
@@ -223,7 +223,7 @@ const VideoDisplay: React.FC<VideoDisplayProps> = ({
       console.log("🧠 Saved to localStorage: lastVideoID =", video_id);
 
       // ✅ Update UI state
-      setVideoSrc(videoUrl);
+      setVideoSrc(video_url);
       videoDroppedRef.current = true;
     } catch (err) {
       console.error("❌ Failed to upload or store video:", err);
@@ -389,6 +389,7 @@ const VideoDisplay: React.FC<VideoDisplayProps> = ({
       try {
         // ✅ Attempt to retrieve video metadata from IndexedDB
         const metadata = await getVideoById(id);
+        console.log("FOUND EMTA DATA", metaData)
         if (!metadata) {
           console.warn("⚠️ No video found in IndexedDB with ID:", id);
           return;

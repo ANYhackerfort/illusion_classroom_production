@@ -101,7 +101,6 @@ urlpatterns = [
     path("get_org_videos/<int:org_id>/", get_org_videos, name="get_org_videos"),
     path("delete_video/<int:video_id>/", delete_video, name="delete_video"),
     path("edit_video/<int:video_id>/<int:org_id>/<str:room_name>/", edit_video, name="edit_video"),
-    path("delete_video/<int:video_id>/", delete_video, name="delete_video"),
     path("get_video_by_id/<int:video_id>/", get_video_by_id, name="get_video_by_id"),
     path("store_video_question_answers/<int:org_id>/<str:room_name>/<int:question_id>/", store_video_question_answers, name="store_video_question_answers"),
 

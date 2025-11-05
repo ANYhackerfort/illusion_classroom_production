@@ -133,7 +133,6 @@ useEffect(() => {
               Number(org_id),
               roomName!,
             );
-            console.log("SDFOJSDIFOSDIJFSDOIFJ", result)
 
             if (result) {
               const { video_segments, video_url } = result;

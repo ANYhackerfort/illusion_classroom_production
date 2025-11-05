@@ -70,6 +70,7 @@ const VideoTable: React.FC<VideoTableProps> = ({
           `%c📡 Retrieved ${orgVideos.length} videos from backend.`,
           "color: #33cc33;",
         );
+        console.log(orgVideos)
 
         // ✅ 3. Save all to IndexedDB (in parallel)
         await Promise.all(
@@ -127,9 +128,12 @@ const VideoTable: React.FC<VideoTableProps> = ({
 
       // ✅ Match userChecked with the current meeting ID
       if (userChecked && !orgChecked) {
+
+        
         filteredVideos = localVideos.filter(
-          (v) => v.associated_meeting_id === currentMeetingIdRef.current,
+          (v) => String(v.associated_meeting_id) === String(currentMeetingIdRef.current),
         );
+
         console.log(
           `%c🎥 Showing ${filteredVideos.length} videos for current meeting (${currentMeetingIdRef.current})`,
           "color: #66ccff;",

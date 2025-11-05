@@ -112,7 +112,7 @@ export const uploadVideoMetadata = async (
 ): Promise<{
   video_id: string;
   video_name: string;
-  storage_path: string;
+  video_url: string;
   thumbnail_url: string | null;
   duration: number;
   description: string;
@@ -128,20 +128,18 @@ export const uploadVideoMetadata = async (
       `/api/auth/store_video/${encodeURIComponent(org_id)}/${encodeURIComponent(meetingName)}/`,
       formData,
       {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
+        headers: { "Content-Type": "multipart/form-data" },
         withCredentials: true,
       },
     );
 
     console.log("✅ Video metadata and file uploaded:", response.data);
 
-    // Ensure consistent type casting
+    // ✅ Map to actual backend field names
     return {
       video_id: String(response.data.video_id),
-      video_name: response.data.video_name,
-      storage_path: response.data.storage_path,
+      video_name: response.data.name, // backend returns "name"
+      video_url: response.data.video_url ?? "", // full public URL
       thumbnail_url: response.data.thumbnail_url ?? null,
       duration: Number(response.data.duration ?? 0),
       description: response.data.description ?? "",
