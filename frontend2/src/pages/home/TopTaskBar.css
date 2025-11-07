@@ -1,0 +1,313 @@
+:root {
+  --ttb-bg: rgba(255, 255, 255, 0.9);
+  --ttb-bg-elev: rgba(255, 255, 255, 0.7);
+  --ttb-text: #111827; /* gray-900 */
+  --ttb-text-dim: #6b7280; /* gray-500/600 */
+  --ttb-border: rgba(0, 0, 0, 0.05);
+  --ttb-ring: rgba(0, 0, 0, 0.2);
+  --ttb-shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 1px 1px rgba(0, 0, 0, 0.04);
+  --ttb-radius-lg: 12px;
+  --ttb-radius-xl: 16px;
+  --ttb-radius-2xl: 20px;
+}
+
+.ttb-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  width: 100%;
+  background: var(--ttb-bg);
+  border-bottom: 1px solid var(--ttb-border);
+  backdrop-filter: blur(8px);
+}
+
+@supports not (backdrop-filter: blur(8px)) {
+  .ttb-header {
+    background: #ffffff;
+  }
+}
+
+.ttb-container {
+  padding: 0 1rem;
+}
+
+.ttb-inner {
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* left, center, right */
+  gap: 0.5rem;
+  flex-wrap: nowrap; /* ✅ keep in one row */
+  overflow: hidden;
+}
+
+/* ================================
+   Brand (right side)
+================================ */
+.ttb-brand {
+  margin-left: auto; /* ✅ anchor to right */
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  user-select: none;
+}
+
+.ttb-logo {
+  height: 28px;
+  width: 28px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.9);
+}
+
+.ttb-title {
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--ttb-text);
+  white-space: nowrap; /* prevent breaking */
+}
+
+/* ================================
+   Tabs (center, flex)
+================================ */
+.ttb-nav {
+  flex: 1; /* take available space between left and right */
+  display: flex;
+  justify-content: center; /* keep centered */
+}
+
+.ttb-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--ttb-radius-2xl);
+  background: rgba(0, 0, 0, 0.04);
+  border: 1px solid var(--ttb-border);
+  max-width: 100%;
+}
+
+.ttb-tab {
+  position: relative;
+  padding: 8px 14px;
+  font-size: 0.9rem;
+  line-height: 1;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--ttb-text-dim);
+  border: none;
+  cursor: pointer;
+  transition:
+    background 140ms ease,
+    color 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.ttb-tab:hover {
+  background: var(--ttb-bg-elev);
+  color: var(--ttb-text);
+}
+
+.ttb-tab:focus {
+  outline: none;
+}
+
+.ttb-tab:focus-visible {
+  box-shadow: 0 0 0 3px var(--ttb-ring);
+}
+
+.ttb-tab.is-active {
+  background: #ffffff;
+  color: var(--ttb-text);
+  box-shadow: var(--ttb-shadow);
+}
+
+/* ================================
+   Organization Dropdown (left side)
+================================ */
+.ttb-org-dropdown {
+  position: relative;
+  margin-right: auto; /* ✅ keep it hugging left */
+}
+.ttb-caret {
+  font-size: 0.7rem;
+  opacity: 0.7;
+}
+
+.ttb-org-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 4px;
+  background: #fff;
+  border: 1px solid var(--ttb-border);
+  border-radius: var(--ttb-radius-lg);
+  box-shadow: var(--ttb-shadow);
+  min-width: 180px;
+  z-index: 100;
+  padding: 4px 0;
+}
+
+.ttb-org-item {
+  padding: 8px 12px;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--ttb-text);
+  font-size: 0.9rem;
+  transition: background 140ms ease;
+}
+
+.ttb-org-item:hover {
+  background: var(--ttb-bg-elev);
+}
+
+/* ================================
+   Manage Button
+================================ */
+.manage-btn {
+  padding: 8px 20px !important;
+  font-size: 0.9rem !important;
+  border-radius: 6px !important;
+  border: 1px solid #6b7280 !important; /* gray-500 */
+  background: #f9fafb !important; /* gray-50 */
+  color: #374151 !important; /* gray-700 */
+  font-weight: 500 !important;
+  text-transform: none !important;
+  transition: all 0.2s ease;
+}
+
+.manage-btn:hover {
+  background: #e5e7eb !important; /* gray-200 */
+  border-color: #4b5563 !important; /* gray-600 */
+  color: #111827 !important; /* gray-900 */
+}
+
+/* ================================
+   Responsive Shrinking
+================================ */
+@media (max-width: 1024px) {
+  .ttb-tab {
+    padding: 6px 10px;
+    font-size: 0.8rem;
+  }
+  .ttb-title {
+    font-size: 0.9rem;
+  }
+  .ttb-logo {
+    height: 22px;
+    width: 22px;
+  }
+  .ttb-org-button {
+    padding: 6px 10px;
+    font-size: 0.8rem;
+  }
+  .manage-btn {
+    padding: 6px 12px !important;
+    font-size: 0.75rem !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .ttb-tab {
+    padding: 4px 8px;
+    font-size: 0.75rem;
+  }
+  .ttb-title {
+    font-size: 0.8rem;
+  }
+  .ttb-logo {
+    height: 18px;
+    width: 18px;
+  }
+  .ttb-org-button {
+    padding: 4px 8px;
+    font-size: 0.75rem;
+  }
+  .manage-btn {
+    padding: 4px 10px !important;
+    font-size: 0.7rem !important;
+  }
+  .ttb-tabs {
+    gap: 2px;
+    padding: 2px;
+  }
+}
+
+@media (max-width: 480px) {
+  .ttb-tab {
+    padding: 2px 6px;
+    font-size: 0.65rem;
+  }
+  .ttb-title {
+    font-size: 0.7rem;
+  }
+  .ttb-logo {
+    height: 16px;
+    width: 16px;
+  }
+  .ttb-org-button {
+    padding: 2px 6px;
+    font-size: 0.65rem;
+  }
+  .manage-btn {
+    padding: 2px 8px !important;
+    font-size: 0.65rem !important;
+  }
+  .ttb-tabs {
+    gap: 1px;
+    padding: 1px;
+  }
+}
+
+/* ================================
+   Left / Right Groups
+================================ */
+.ttb-left-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-right: auto;
+}
+
+.ttb-right-group {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* ================================
+   Current Organization Badge
+================================ */
+.ttb-org-badge {
+  background: #2563eb;
+  color: #fff;
+  padding: 6px 14px;
+  border-radius: 9999px; /* full pill */
+  font-weight: 600;
+  font-size: 0.9rem;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  letter-spacing: 0.01em;
+}
+
+.ttb-org-badge:hover {
+  background: #1d4ed8;
+  box-shadow: 0 3px 8px rgba(29, 78, 216, 0.35);
+}
+
+.ttb-org-id {
+  opacity: 0.85;
+  font-size: 0.8rem;
+}
+
+/* Keep badge responsive */
+@media (max-width: 768px) {
+  .ttb-org-badge {
+    font-size: 0.75rem;
+    padding: 4px 10px;
+  }
+}

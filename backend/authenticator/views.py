@@ -862,6 +862,8 @@ def refresh_meeting_segments(request, meeting_name):
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=400)
 
+from django.utils.dateparse import parse_datetime
+
 @csrf_exempt
 @login_required
 def edit_video(request, video_id, org_id, room_name):
@@ -874,9 +876,13 @@ def edit_video(request, video_id, org_id, room_name):
         new_timestamp = data.get("lastEdited")
         new_name = data.get("name")
         new_tags = data.get("tags", [])
-        new_thumbnail = data.get("thumbnail_url")  # ✅ may or may not exist
+        new_thumbnail = data.get("thumbnail_url")
 
-        video = Video.objects.filter(id=video_id).select_related("organization", "meeting").first()
+        video = (
+            Video.objects.filter(id=video_id)
+            .select_related("organization", "meeting")
+            .first()
+        )
         if not video:
             return JsonResponse({"error": f"Video {video_id} not found."}, status=404)
 
@@ -899,19 +905,42 @@ def edit_video(request, video_id, org_id, room_name):
             question_card = None
             q_card_dict = None
 
+            # ✅ Handle question cards properly
             if seg.get("isQuestionCard") and q_data:
-                question_card = QuestionCard.objects.create(
-                    user=request.user,
-                    organization=org,
-                    question=q_data["question"],
-                    answers=q_data["answers"],
-                    difficulty=q_data["difficulty"],
-                    type=q_data["type"],
-                    display_type=q_data.get("displayType"),
-                    show_winner=q_data.get("showWinner"),
-                    live=q_data.get("live"),
-                    correct_answers=q_data.get("correctAnswer", []),
-                )
+                q_card_id = q_data.get("id")
+
+                if q_card_id:
+                    # Try to find existing question card
+                    question_card = QuestionCard.objects.filter(id=q_card_id).first()
+                    if not question_card:
+                        print(f"⚠️ QuestionCard {q_card_id} not found — creating new one.")
+                        question_card = QuestionCard.objects.create(
+                            user=request.user,
+                            organization=org,
+                            question=q_data["question"],
+                            answers=q_data["answers"],
+                            difficulty=q_data["difficulty"],
+                            type=q_data["type"],
+                            display_type=q_data.get("displayType"),
+                            show_winner=q_data.get("showWinner"),
+                            live=q_data.get("live"),
+                            correct_answers=q_data.get("correctAnswer", []),
+                        )
+                else:
+                    # No id provided — new question card
+                    question_card = QuestionCard.objects.create(
+                        user=request.user,
+                        organization=org,
+                        question=q_data["question"],
+                        answers=q_data["answers"],
+                        difficulty=q_data["difficulty"],
+                        type=q_data["type"],
+                        display_type=q_data.get("displayType"),
+                        show_winner=q_data.get("showWinner"),
+                        live=q_data.get("live"),
+                        correct_answers=q_data.get("correctAnswer", []),
+                    )
+
                 q_card_dict = {
                     "id": str(question_card.id),
                     "question": question_card.question,
@@ -923,6 +952,7 @@ def edit_video(request, video_id, org_id, room_name):
                     "live": question_card.live,
                 }
 
+            # ✅ Create new video segment
             VideoSegment.objects.create(
                 video=video,
                 source_start=seg["source"][0],
@@ -936,13 +966,14 @@ def edit_video(request, video_id, org_id, room_name):
                 "questionCardData": q_card_dict,
             })
 
-        from django.utils.dateparse import parse_datetime
+        # 🕒 Handle updated timestamps
         if new_timestamp:
             parsed = parse_datetime(new_timestamp)
             video.created_at = parsed if parsed else now()
         else:
             video.created_at = now()
 
+        # 🧾 Update metadata
         if new_name:
             video.name = new_name.strip()
         if new_tags:
@@ -952,7 +983,7 @@ def edit_video(request, video_id, org_id, room_name):
 
         video.save(update_fields=["created_at", "name", "tags", "thumbnail_url"])
 
-        # ✅ Build absolute URLs (consistent with get_video_by_id)
+        # 🌐 Build absolute URLs
         if video.url and not video.url.startswith("http"):
             video_url = request.build_absolute_uri(
                 os.path.join(settings.MEDIA_URL, video.url)
@@ -967,6 +998,7 @@ def edit_video(request, video_id, org_id, room_name):
         else:
             thumbnail_url = video.thumbnail_url
 
+        # 💾 Cache updates
         cache.set(
             f"video:{video.id}",
             {
@@ -981,6 +1013,7 @@ def edit_video(request, video_id, org_id, room_name):
         )
         cache.delete(f"org_videos:{org.id}")
 
+        # 🔔 Notify WebSocket listeners
         channel_layer = get_channel_layer()
         async_to_sync(channel_layer.group_send)(
             f"org_{org.id}_updates",
@@ -994,7 +1027,7 @@ def edit_video(request, video_id, org_id, room_name):
 
         print(f"📡 Sent WebSocket update for edited video {video.id}")
 
-        # ✅ Return updated metadata for frontend
+        # ✅ Return updated metadata
         return JsonResponse({
             "message": "Video updated successfully.",
             "lastEdited": video.created_at.isoformat(),
@@ -1369,7 +1402,7 @@ def return_bot_answers(request, meeting_name):
             choices=frontend_answers,
             current_question_index=current_question,
             start_time=start_time,
-            end_time=end_time,
+            end_time=(end_time - 6), # TODO: hard coded for now
             question_type=question_type,
         )
         
@@ -2142,34 +2175,58 @@ def create_question_card(request, org_id, meeting_id):
         # ✅ Extract fields
         question = data.get("question", "").strip()
         answers = data.get("answers", [])
-        correct_answers = data.get("correctAnswers", None)  # 👈 NEW
+        correct_answers = data.get("correctAnswers", None)
         difficulty = data.get("difficulty", "").lower()
         qtype = data.get("type", "").lower()
         display_type = data.get("displayType", None)
         show_winner = data.get("showWinner", None)
         live = data.get("live", None)
-        
-        print(correct_answers)
 
         # ✅ Basic validation
         if not question or not answers or not difficulty or not qtype:
             return JsonResponse({"error": "Missing required fields."}, status=400)
 
-        # ✅ Create QuestionCard with correct_answers
+        # ✅ Check for exact duplicate (same all fields)
+        existing_qc = QuestionCard.objects.filter(
+            user=request.user,
+            organization=organization,
+            meeting=meeting,
+            question=question,
+            answers=answers,
+            correct_answers=correct_answers,
+            difficulty=difficulty,
+            type=qtype,
+            display_type=display_type,
+            show_winner=show_winner,
+            live=live,
+        ).first()
+
+        if existing_qc:
+            print(f"⚠️ Duplicate QuestionCard detected (id={existing_qc.id}), skipping creation.")
+            return JsonResponse(
+                {
+                    "message": "QuestionCard already exists with identical fields.",
+                    "question_id": existing_qc.id,
+                    "meeting_id": meeting.id,
+                    "organization_id": organization.id,
+                },
+                status=200,
+            )
+
+        # ✅ Create QuestionCard
         qc = QuestionCard.objects.create(
             user=request.user,
             organization=organization,
             meeting=meeting,
             question=question,
             answers=answers,
-            correct_answers=correct_answers,  # 👈 ADDED HERE
+            correct_answers=correct_answers,
             difficulty=difficulty,
             type=qtype,
             display_type=display_type,
             show_winner=show_winner,
             live=live,
         )
-        
 
         print(f"🆕 Created QuestionCard {qc.id} for meeting {meeting.id} / org {organization.id}")
 
@@ -2177,11 +2234,11 @@ def create_question_card(request, org_id, meeting_id):
         cache_key = f"org_question_cards:{org_id}"
         cache.delete(cache_key)
 
-        # 📢 WebSocket broadcast
+        # 📡 Broadcast via WebSocket
         try:
             channel_layer = get_channel_layer()
             async_to_sync(channel_layer.group_send)(
-                f"org_{organization.id}_updates",  # ✅ FIXED to match Video pattern
+                f"org_{organization.id}_updates",
                 {
                     "type": "org_update",
                     "category": "question",
@@ -2977,19 +3034,43 @@ def edit_bot(request, bot_id, org_id, room_name):
 
     try:
         user = request.user
-        bot = Bot.objects.select_related("organization", "meeting").filter(id=bot_id).first()
+        bot = (
+            Bot.objects.select_related("organization", "meeting")
+            .filter(id=bot_id)
+            .first()
+        )
         if not bot:
             return JsonResponse({"error": "Bot not found"}, status=404)
         if not user_in_org(user, bot.organization):
             return JsonResponse({"error": "Not authorized"}, status=403)
 
         data = json.loads(request.body)
-        bot.name = data.get("name", bot.name)
-        bot.memory = data.get("memory", bot.memory)
-        bot.answers = data.get("answers", bot.answers)
+
+        # ✅ Update only the provided fields
+        if "name" in data:
+            bot.name = data["name"]
+
+        if "memory" in data:
+            bot.memory = data["memory"]
+
+        # ✅ Only update answers if explicitly passed and not null
+        if "answers" in data and data["answers"] is not None:
+            new_answers = data["answers"]
+            if isinstance(new_answers, list):
+                structured = []
+                for entry in new_answers:
+                    if not isinstance(entry, dict):
+                        continue
+                    structured.append({
+                        "question_id": entry.get("question_id"),
+                        "answers": entry.get("answers", []),
+                        "answer_time": entry.get("answer_time", 0),
+                    })
+                bot.answers = structured
+
         bot.save()
 
-        # ✅  Build *complete* cached payload
+        # ✅ Cache update
         bot_data = {
             "id": bot.id,
             "name": bot.name,
@@ -3001,11 +3082,10 @@ def edit_bot(request, bot_id, org_id, room_name):
             "meeting_id": bot.meeting.id if bot.meeting else None,
         }
 
-        # ✅  Overwrite full cache entry
         cache.set(f"bot:{bot.id}", bot_data, timeout=600)
-        cache.delete(f"org_bots:{bot.organization.id}")  # invalidate org cache
+        cache.delete(f"org_bots:{bot.organization.id}")
 
-        # ✅  Broadcast update
+        # ✅ Broadcast updates
         channel_layer = get_channel_layer()
         async_to_sync(channel_layer.group_send)(
             f"org_{bot.organization.id}_updates",
@@ -3016,25 +3096,20 @@ def edit_bot(request, bot_id, org_id, room_name):
                 "payload": {"id": bot.id},
             },
         )
-        
-        # update for active meeting
+
         cache_key = f"active_meeting:{org_id}:{room_name}"
         existing = cache.get(cache_key)
-        group_name = f"meeting_{org_id}_{room_name}"
         async_to_sync(channel_layer.group_send)(
-                group_name,
-                {
-                    "type": "meeting_state_changed",
-                    "state": existing,
-                }
-            )
-        
+            f"meeting_{org_id}_{room_name}",
+            {"type": "meeting_state_changed", "state": existing},
+        )
+
         return JsonResponse({"message": "Bot updated", "bot_id": bot.id}, status=200)
 
     except Exception as e:
         print("🔥 edit_bot error:", e)
         return JsonResponse({"error": str(e)}, status=500)
-
+    
 # ============================================================
 # ✅ DELETE BOT
 # ============================================================
@@ -3309,12 +3384,15 @@ def generate_answers_bot(request, bot_id, org_id, room_name):
             if segment.question_card:
                 qc = segment.question_card
                 segment_data.append({
-                    "id": qc.id,  # ✅ store question ID
+                    "id": qc.id,
                     "question": qc.question,
                     "answers": qc.answers,
                     "type": qc.type,
+                    "start_time": segment.source_start,
+                    "end_time": segment.source_end,
                 })
 
+        question_place = 0 
         final_answers = []
         for seg in segment_data:
             generated = SmartBotAnswerEngine.generate_simple_answers(
@@ -3322,12 +3400,16 @@ def generate_answers_bot(request, bot_id, org_id, room_name):
                 answers=seg["answers"],
                 question_type=seg["type"],
                 bot_memory=bot_memory,
+                start_time=seg["start_time"],
+                end_time=seg["end_time"] - 8, # TODO: make this not hard coded
+                question_place=question_place, 
             )
-
-            if generated:
+            
+            if generated["answers"]:
                 final_answers.append({
-                    "question_id": seg["id"],  # ✅ store ID, not text
-                    "answers": generated,
+                    "question_id": seg["id"],
+                    "answers": generated["answers"],
+                    "answer_time": generated["answer_time"],
                 })
 
         # ✅ Store the final answers
@@ -3425,7 +3507,6 @@ def get_bot_answers(request, org_id, room_name):
             if not field:
                 return None
             try:
-                # 🔹 Use Django's .url property and build full URL
                 url = field.url if hasattr(field, "url") else str(field)
                 absolute = request.build_absolute_uri(url).replace("\\", "/")
                 return absolute
@@ -3436,42 +3517,85 @@ def get_bot_answers(request, org_id, room_name):
         for bot_id in bot_ids:
             bot = Bot.objects.filter(id=bot_id, organization__id=org_id).first()
             if not bot:
+                print(f"⚠️ Bot {bot_id} not found for org {org_id}")
                 continue
 
-            # ✅ Log raw field to confirm
-            print(f"BOT IMAGE RAW FIELD: {bot.image}")
-
-            # 🔹 Build full image URL
             img_url = build_absolute_media_url(bot.image)
-            print(f"✅ Final Bot Image URL: {img_url}")
+            print(f"✅ [Bot {bot_id}] image_url={img_url}")
 
-            # 🔹 Resolve question text
             resolved_answers = []
             for entry in (bot.answers or []):
                 if not isinstance(entry, dict):
                     continue
+
                 qid = entry.get("question_id")
+                q_answers = entry.get("answers", [])
+                q_time = entry.get("answer_time")
+
                 if not qid:
                     continue
+
                 q_obj = QuestionCard.objects.filter(id=qid).first()
                 resolved_answers.append({
                     "question_id": qid,
                     "question": q_obj.question if q_obj else None,
-                    "answers": entry.get("answers", []),
+                    "type": q_obj.type if q_obj else None,
+                    "answers": q_answers,
+                    "answer_time": q_time,
                 })
 
             bots_info.append({
                 "id": bot.id,
                 "name": bot.name,
-                "img_url": img_url,
+                "image_url": img_url,
+                "memory": bot.memory,
                 "answers": resolved_answers,
+                "organization_id": bot.organization.id if bot.organization else None,
+                "meeting_id": bot.meeting.id if bot.meeting else None,
+                "video_url": bot.video_url,
             })
 
-        print(f"✅ Returning {len(bots_info)} bots for org={org_id}")
-        return JsonResponse({"bots": bots_info})
+        print(f"✅ Returning {len(bots_info)} bots for org={org_id}, room={room_name}")
+        return JsonResponse({"bots": bots_info}, status=200)
 
     except Exception as e:
         print(f"🔥 Exception in get_bot_answers: {e}")
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({"error": "Internal server error"}, status=500)
+
+@csrf_exempt
+def get_question_by_id(request, question_id):
+    """
+    Fetch a QuestionCard by its ID.
+    Returns the question text, correct answers, and start/end times (if any VideoSegment points to it).
+    """
+    if request.method != "GET":
+        return JsonResponse({"error": "Only GET allowed"}, status=405)
+
+    try:
+        # 🧩 Get the question card
+        question = QuestionCard.objects.filter(id=question_id).first()
+        if not question:
+            return JsonResponse(
+                {"error": f"QuestionCard {question_id} not found."}, status=404
+            )
+
+        # 🎬 Try to find an associated VideoSegment
+        segment = VideoSegment.objects.filter(question_card=question).first()
+
+        data = {
+            "id": question.id,
+            "question": question.question,
+            "correct_answers": question.correct_answers or [],
+            "start": segment.source_start if segment else None,
+            "end": segment.source_end if segment else None,
+        }
+
+        return JsonResponse(data, status=200)
+
+    except Exception as e:
+        print(f"❌ Error in get_question_by_id: {e}")
         return JsonResponse({"error": "Internal server error"}, status=500)
 
 @csrf_exempt

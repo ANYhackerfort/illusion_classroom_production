@@ -1,0 +1,183 @@
+/* 🎯 DROP ZONE WRAPPER */
+.surveyzone-container {
+  border-radius: 12px;
+  padding: 2rem;
+  text-align: center;
+  background: transparent;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+/* ℹ️ SINGLE CLEAN DOTTED BOX */
+.surveyzone-instructions {
+  border: 2px dashed #ccc;
+  border-radius: 10px;
+  background: #fdfdfd;
+  padding: 1.5rem;
+  max-width: 650px;
+  margin: 0 auto 1.25rem auto;
+  box-sizing: border-box;
+  text-align: left;
+  color: #333;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.surveyzone-instruction-box {
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+}
+
+.surveyzone-instructions strong {
+  display: block;
+  margin-bottom: 0.75rem;
+  font-size: 1rem;
+  color: #111;
+}
+
+.surveyzone-instructions pre {
+  background: #f8f8f8;
+  border-radius: 6px;
+  padding: 0.75rem;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.85rem;
+  color: #333;
+  margin-top: 0.5rem;
+  margin-bottom: 1rem;
+  border: 1px solid #e0e0e0;
+}
+
+.surveyzone-instructions ul {
+  margin: 0.75rem 0 0.5rem;
+  padding-left: 1.25rem;
+  font-size: 0.9rem;
+  color: #444;
+}
+
+.surveyzone-instructions code {
+  background: #f0f0f0;
+  border-radius: 4px;
+  padding: 0 4px;
+}
+
+/* 📘 Message below the example */
+.surveyzone-no-files {
+  margin-top: 1rem;
+  font-style: italic;
+  font-size: 0.9rem;
+  color: #555;
+  text-align: center;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* 🧱 ROW LAYOUT (replaces masonry) */
+.surveyzone-list {
+  display: flex;
+  flex-direction: row;     /* horizontal layout */
+  flex-wrap: wrap;         /* allow wrapping to next line */
+  justify-content: center; /* center items in each row */
+  gap: 16px;
+  padding: 1rem 0;
+  width: 100%;
+  margin: 0 auto;
+}
+
+
+/* ▒▒▒ SURVEY BLOCK ▒▒▒ */
+.surveyzone-block {
+  position: relative;
+  width: 100%;
+  max-width: 700px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #111827;
+  cursor: grab;
+  user-select: none;
+  transition:
+    background 0.2s ease,
+    transform 0.1s ease,
+    box-shadow 0.2s ease;
+  box-sizing: border-box;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.surveyzone-block:hover {
+  background: #f9fafb;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.surveyzone-block:active {
+  cursor: grabbing;
+  background: #f3f4f6;
+  transform: scale(0.97);
+}
+
+.surveyzone-block-content {
+  background: #f9fafb;
+  border-radius: 10px;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+  transition: box-shadow 0.2s ease;
+}
+
+.surveyzone-block:hover .surveyzone-block-content {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.surveyzone-block-title {
+  margin: 0;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #111827;
+}
+
+.surveyzone-block-preview {
+  font-size: 0.85rem;
+  color: #555;
+  font-style: italic;
+  word-break: break-word;
+  margin-top: 0.25rem;
+  font-weight: 400;
+}
+
+.surveyzone-summary-list {
+  list-style: disc;
+  padding-left: 1rem;
+  margin: 0;
+  font-size: 0.85rem;
+  color: #444;
+}
+
+/* ❌ DELETE BUTTON */
+.surveyzone-delete-wrapper {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  z-index: 5;
+}
+
+.surveyzone-delete-x {
+  background: none;
+  border: none;
+  color: #d33;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.surveyzone-delete-x:hover {
+  color: #a00;
+}

@@ -65,6 +65,7 @@ from .views import (
     store_video_question_answers,
     get_all_video_question_answers,
     get_bot_answers,
+    get_question_by_id,
 )
 
 urlpatterns = [
@@ -149,6 +150,10 @@ urlpatterns = [
         get_bot_answers,
         name="get_bot_answers",
     ),
+    path("get_question_by_id/<int:question_id>/",
+         get_question_by_id,
+         name="get_question_by_id",
+        ),
     
     path("update_final_state/<int:org_id>/<str:room_name>/", update_final_state, name="edit_bot"),
     path("stop_meeting_complete/<int:org_id>/<str:room_name>/", stop_meeting_complete, name="edit_bot"),

@@ -1,0 +1,49 @@
+.meeting-settings-container {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+}
+
+.meeting-content {
+  flex: 1;
+  padding: 20px;
+  background-color: #f8f8f8;
+  overflow-y: auto;
+}
+
+.page {
+  font-size: 24px;
+  font-weight: bold;
+  color: #333;
+}
+
+.circle-folder-button {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: rgba(30, 30, 30, 0.55); /* translucent dark glass */
+  backdrop-filter: blur(10px) saturate(160%);
+  -webkit-backdrop-filter: blur(10px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 50%;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35),
+              inset 0 1px 2px rgba(255, 255, 255, 0.05);
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.3s ease;
+  cursor: pointer;
+  z-index: 999;
+}
+
+.circle-folder-button:hover {
+  background: rgba(40, 40, 40, 0.65);
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.45),
+              inset 0 1px 2px rgba(255, 255, 255, 0.08);
+  transform: scale(1.08);
+}

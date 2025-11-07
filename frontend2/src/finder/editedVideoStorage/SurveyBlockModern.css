@@ -1,0 +1,207 @@
+/* 🌤️ Modern Washed Blue Survey Card Styling — Compact, Clean, and Consistent */
+
+/* --- WRAPPER --- */
+.survey-card-wrapper {
+  position: relative;
+  display: inline-flex;
+  justify-content: center;
+  vertical-align: top;
+  margin: 0.4rem; /* compact spacing between cards */
+  max-width: 480px;
+}
+
+/* --- CARD CONTAINER --- */
+.survey-card {
+  position: relative;
+  background: #e7f0fb; /* washed blue fill */
+  border: 1px solid #c5d8f5;
+  border-radius: 14px;
+  padding: 1.1rem;
+  transition: all 0.25s ease;
+  box-shadow: 0 2px 8px rgba(90, 120, 180, 0.1);
+  cursor: grab;
+  width: 100%;
+  max-width: 460px;
+}
+
+.survey-card:hover {
+  background: #d9e8fa;
+  box-shadow: 0 4px 14px rgba(90, 120, 170, 0.15);
+  transform: translateY(-2px);
+  border-color: #b0c8f0;
+}
+
+.survey-card:active {
+  cursor: grabbing;
+  transform: scale(0.98);
+}
+
+/* --- DELETE BUTTON --- */
+.survey-card-delete {
+  position: absolute;
+  top: 6px;
+  right: 10px;
+  background: none;
+  border: none;
+  padding: 0;
+  color: #d33;
+  font-size: 1.3rem;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    transform 0.15s ease;
+  z-index: 10;
+}
+
+.survey-card-delete:hover {
+  color: #a00;
+  transform: scale(1.1);
+}
+
+/* --- BODY CONTENT --- */
+.survey-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* --- HEADER --- */
+.survey-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.survey-card-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1e1e1e;
+  margin: 0;
+}
+
+.survey-card-count {
+  font-size: 0.85rem;
+  color: #4a618b;
+}
+
+/* --- DESCRIPTION PREVIEW --- */
+.survey-card-description {
+  font-size: 0.9rem;
+  color: #334c7a;
+  line-height: 1.4;
+  font-weight: 400;
+  border-left: 3px solid #007aff;
+  padding-left: 0.6rem;
+  margin-top: 0.25rem;
+}
+
+/* --- LIST OF ITEMS (legacy style) --- */
+.survey-card-list {
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0;
+}
+
+.survey-card-list li {
+  font-size: 0.9rem;
+  color: #0a2540;
+  background: #edf4ff;
+  border-radius: 6px;
+  padding: 0.4rem 0.6rem;
+  margin-bottom: 0.3rem;
+  transition: background 0.2s ease;
+}
+
+.survey-card-list li:hover {
+  background: #dfe9ff;
+}
+
+/* --- “...and more” indicator --- */
+.survey-card-more {
+  color: #5574b9;
+  font-style: italic;
+}
+
+/* --- MINI CARD PREVIEW STYLE --- */
+.survey-mini-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 0.5rem;
+}
+
+.mini-card {
+  background: #eef3fc;
+  border: 1px solid #c3d4f7;
+  border-radius: 8px;
+  padding: 6px 10px;
+  transition: background 0.2s ease;
+}
+
+.mini-card:hover {
+  background: #e0ebff;
+}
+
+.mini-type {
+  font-size: 0.7rem;
+  color: #4366a9;
+  margin: 0 0 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.mini-question {
+  font-size: 0.85rem;
+  color: #1e2b4f;
+  margin: 0;
+}
+
+.mini-card.more {
+  text-align: center;
+  color: #5574b9;
+  font-style: italic;
+}
+
+/* --- CHIPS (modern horizontal item tags) --- */
+.survey-card-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 0.5rem;
+}
+
+.survey-chip {
+  display: inline-flex;
+  align-items: center;
+  background: #f0f6ff;
+  border: 1px solid #c5d8f5;
+  color: #1e3a8a;
+  font-size: 0.85rem;
+  font-weight: 500;
+  border-radius: 20px;
+  padding: 4px 10px;
+  transition: all 0.2s ease;
+}
+
+.survey-chip:hover {
+  background: #dbe8ff;
+  border-color: #b0c8f0;
+  color: #0a2540;
+}
+
+.survey-chip.more {
+  background: #e7eefb;
+  color: #4468a5;
+  font-style: italic;
+}
+
+.survey-chip.qualtrics-link {
+  text-decoration: none;
+  color: #1d4ed8;
+}
+
+.survey-chip.qualtrics-link:hover {
+  text-decoration: underline;
+  color: #0a42c5;
+}
