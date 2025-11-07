@@ -111,11 +111,11 @@ const VideoQuestionCard: React.FC<QuestionCardProps> = ({
         )}
       </div>
 
-      <div className="vq-footer">
+      {/* <div className="vq-footer">
         <span className="vq-badge">{displayType}</span>
         {showWinner && <span className="vq-badge">🏆 Winner</span>}
         {live && <span className="vq-badge">🔴 Live</span>}
-      </div>
+      </div> */}
     </div>
   );
 };
