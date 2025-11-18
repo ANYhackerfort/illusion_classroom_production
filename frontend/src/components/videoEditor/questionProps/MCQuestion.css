@@ -149,6 +149,16 @@
   filter: none;
 }
 
+/* ❗ Skip answers must NEVER look wrong/correct during reveal */
+.mcq-answers.reveal-active .mcq-answer-box.skip-gray {
+  opacity: 1 !important;
+  background: #f5f5f5 !important;
+  border: 2px solid #cccccc !important;
+  box-shadow: none !important;
+  filter: none !important;
+  pointer-events: auto !important; /* keep clickable */
+}
+
 /* === Scrollbar === */
 .mcq-answers::-webkit-scrollbar {
   width: 8px;
@@ -159,4 +169,9 @@
 }
 .mcq-answers::-webkit-scrollbar-thumb:hover {
   background-color: #999;
+}
+
+.skip-gray {
+  opacity: 0.95;
+  filter: grayscale(1);
 }

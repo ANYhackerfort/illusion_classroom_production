@@ -5,11 +5,10 @@ import { storeVideoQuestionAnswers } from "../../../components/videoDisplayer/ap
 import { useParams } from "react-router-dom";
 import type { GetBotAnswersResponse } from "../../../components/videoDisplayer/api/save";
 
-// ✅ Constants
-export const REVEAL_THRESHOLD_SECONDS = 6; // seconds before end to reveal correct answers
-export const CHECK_INTERVAL_MS = 300;      // how often to poll current time
+// Constants
+export const REVEAL_THRESHOLD_SECONDS = 6;
+export const CHECK_INTERVAL_MS = 300;
 
-// ✅ Props
 interface MCQQuestionProps {
   answers: string[];
   questionId: string;
@@ -19,10 +18,9 @@ interface MCQQuestionProps {
   currentTimeRef: React.RefObject<number>;
   start?: number;
   end?: number;
-  botAnswersData?: GetBotAnswersResponse; // 🧠 new prop for live bot answers
+  botAnswersData?: GetBotAnswersResponse;
 }
 
-// ✅ Fallback anonymous image (clean and neutral look)
 const ANON_IMAGE =
   "https://cdn-icons-png.flaticon.com/512/149/149071.png";
 
@@ -50,7 +48,7 @@ const MCQQuestion: React.FC<MCQQuestionProps> = ({
 
   const { org_id, roomName } = useParams<{ org_id: string; roomName: string }>();
 
-  // 🧠 Load user info
+  // Load user info
   useEffect(() => {
     const loadUser = async () => {
       try {
@@ -71,7 +69,7 @@ const MCQQuestion: React.FC<MCQQuestionProps> = ({
     loadUser();
   }, []);
 
-  // 🕓 Timer and reveal logic
+  // Timer reveal logic
   useEffect(() => {
     if (!showWinner) return;
 
@@ -79,21 +77,16 @@ const MCQQuestion: React.FC<MCQQuestionProps> = ({
       const currentTime = currentTimeRef.current ?? 0;
       const secondsRemaining = end - currentTime;
 
-      // timer before reveal (subtract 6)
       const beforeReveal = Math.max(end - REVEAL_THRESHOLD_SECONDS - currentTime, 0);
       setTimeRemaining(beforeReveal);
 
-      if (secondsRemaining <= REVEAL_THRESHOLD_SECONDS) {
-        setWinnerVisible(true);
-      } else {
-        setWinnerVisible(false);
-      }
+      setWinnerVisible(secondsRemaining <= REVEAL_THRESHOLD_SECONDS);
     }, CHECK_INTERVAL_MS);
 
     return () => clearInterval(intervalId);
   }, [showWinner, end, currentTimeRef]);
 
-  // 🤖 Track bot responses
+  // Bot answers
   useEffect(() => {
     if (!botAnswersData || !currentTimeRef) return;
 
@@ -136,33 +129,32 @@ const MCQQuestion: React.FC<MCQQuestionProps> = ({
     return () => clearInterval(interval);
   }, [botAnswersData, questionId, currentTimeRef, start, end]);
 
-  // ✅ Handle user selection (disabled after reveal)
+  // Handle user selection
   const handleClick = async (index: number) => {
     if (winnerVisible) return;
 
-    // ⭐ Require participant_id (user must join first)
     const participantId = localStorage.getItem("participant_id");
-    if (!participantId) {
-      console.warn("❌ No participant_id found — cannot submit answer.");
-      return;
-    }
+    if (!participantId) return;
 
-    const answer = answers[index];
-    setSelectedAnswer(answer);
+    const rawAnswer = answers[index]; // keep EXCEPTION tag
+    const cleanAnswer = rawAnswer.replace("[EXCEPTION:SKIP]", "").trim();
+
+    // UI uses clean answer
+    setSelectedAnswer(cleanAnswer);
 
     if (org_id && roomName && questionId) {
+      // Backend receives the RAW answer including tag
       await storeVideoQuestionAnswers(
         Number(org_id),
         roomName,
         questionId,
-        participantId,          // ⭐ use ID, not name
-        { answers: [answer] }   // ⭐ single answer array
+        participantId,
+        { answers: [rawAnswer] }
       );
     }
   };
 
-
-  // ✅ Avatar renderer
+  // Avatar renderer
   const renderAvatar = (name: string, imgUrl: string) => {
     if (displayType === "face") {
       return (
@@ -187,7 +179,6 @@ const MCQQuestion: React.FC<MCQQuestionProps> = ({
 
   return (
     <div className="mcq-wrap">
-      {/* 🕓 Timer Display */}
       {showWinner && (
         <div className="mcq-timer">
           {timeRemaining > 0
@@ -200,23 +191,50 @@ const MCQQuestion: React.FC<MCQQuestionProps> = ({
 
       <div className={`mcq-answers ${winnerVisible ? "reveal-active" : ""}`}>
         {answers.map((answer, index) => {
-          const userSelected = selectedAnswer === answer;
-          const botsHere = botSelections.filter((b) => b.answer === answer);
+          const isSkip = answer.includes("[EXCEPTION:SKIP]");
+          const cleanAnswer = answer.replace("[EXCEPTION:SKIP]", "").trim();
+
+          const userSelected = selectedAnswer === cleanAnswer;
+
+          // Bots use clean answers too
+          const botsHere = botSelections.filter((b) => b.answer === cleanAnswer);
+
+          // Skip answers NEVER highlight correct/incorrect
+          const isCorrect =
+            !isSkip &&
+            winnerVisible &&
+            correctAnswers.includes(cleanAnswer);
+
+          const isWrong =
+            !isSkip &&
+            winnerVisible &&
+            !correctAnswers.includes(cleanAnswer) &&
+            userSelected;
 
           return (
             <div
               key={index}
-              className={`mcq-answer-box ${userSelected ? "selected" : ""} ${
-                winnerVisible && correctAnswers.includes(answer) ? "correct" : ""
-              }`}
+              className={`mcq-answer-box 
+                ${userSelected ? "selected" : ""} 
+                ${isCorrect ? "correct" : ""} 
+                ${isWrong ? "wrong" : ""} 
+                ${isSkip ? "skip-gray" : ""}
+              `}
               onClick={() => handleClick(index)}
             >
               <div className="mcq-answer-top">
-                <span className="mcq-answer-text">{answer}</span>
+                <span className="mcq-answer-text">{cleanAnswer}</span>
               </div>
 
               <div className="mcq-avatars-row">
-                {userSelected && renderAvatar(userInfo.name, userInfo.picture)}
+                {/* user always anonymous for skip answers */}
+                {userSelected &&
+                  (isSkip
+                    ? renderAvatar("Anonymous", ANON_IMAGE)
+                    : renderAvatar(userInfo.name, userInfo.picture))
+                }
+
+                {/* bots */}
                 {botsHere.map((b, i) => (
                   <React.Fragment key={i}>
                     {renderAvatar(b.botName, b.imgUrl)}
