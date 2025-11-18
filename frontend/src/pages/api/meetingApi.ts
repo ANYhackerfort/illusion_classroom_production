@@ -241,6 +241,7 @@ export const getCurrentlyPlayingUrl = async (
 export interface JoinRoomPayload {
   ownerEmail: string;
   name: string;
+  participantId: string;
 }
 
 export const joinRoom = async (
@@ -253,17 +254,18 @@ export const joinRoom = async (
     {
       owner_email: payload.ownerEmail,
       name: payload.name,
+      participant_id: payload.participantId, // ⭐ NEW
     },
     {
-      withCredentials: true, // ✅ important so Django sets the cookie
       headers: {
         "Content-Type": "application/json",
       },
     },
   );
 
-  return response.data; // ✅ returns { ok, message, redis_key }
+  return response.data; // { ok, message, participant_id, created }
 };
+
 
 // ORGANIZATIONS
 export interface Organization {

@@ -29,6 +29,12 @@ const NoAccessJoinGate: React.FC<{ orgId: number; onAccessGranted?: () => void }
     getCamera();
   }, []);
 
+  useEffect(() => {
+    if (!localStorage.getItem("participant_id")) {
+        localStorage.setItem("participant_id", crypto.randomUUID());
+      }
+  }, []);
+
   // 📸 Capture photo
   const handleCapture = () => {
     if (!canvasRef.current || !videoRef.current) return;
@@ -53,17 +59,39 @@ const NoAccessJoinGate: React.FC<{ orgId: number; onAccessGranted?: () => void }
 
   // 🚀 Submit join request
   const handleSubmit = async () => {
-    if (!roomName) return setError("Meeting name missing from URL.");
-    if (!name || !ownerEmail) return setError("Please fill in all fields.");
+    if (!roomName) {
+      return setError("Meeting name missing from URL.");
+    }
+    if (!name || !ownerEmail) {
+      return setError("Please fill in all fields.");
+    }
+
+    // ⭐ Ensure participant_id exists
+    let participantId = localStorage.getItem("participant_id");
+    if (!participantId) {
+      participantId = crypto.randomUUID();
+      localStorage.setItem("participant_id", participantId);
+    }
 
     try {
-      await joinRoom(orgId, roomName, { ownerEmail, name });
+      // ⭐ Call updated backend joinRoom
+      await joinRoom(orgId, roomName, {
+        ownerEmail,
+        name,
+        participantId,
+      });
+
+      // ⭐ Store locally for display
       localStorage.setItem("participantName", name);
+
       setSubmitted(true);
       if (onAccessGranted) onAccessGranted();
     } catch (err: any) {
-      if (err.response?.data?.message) setError(err.response.data.message);
-      else setError("Unable to verify access.");
+      if (err.response?.data?.message) {
+        setError(err.response.data.message);
+      } else {
+        setError("Unable to verify access.");
+      }
     }
   };
 

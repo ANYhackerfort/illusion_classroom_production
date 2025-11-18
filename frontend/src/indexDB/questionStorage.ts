@@ -180,3 +180,54 @@ export const updateQuestionStartEnd = async (
     throw err;
   }
 };
+
+/**
+ * Get ONLY the question metadata fields from a StoredQuestion by ID.
+ * Returns:
+ *  {
+ *    question: string;
+ *    displayType: string | null;
+ *    showWinner: boolean | null;
+ *    live: boolean | null;
+ *    correctAnswer: any;
+ *  }
+ */
+export const getQuestionCardMetaById = async (
+  storedQuestionId: string
+): Promise<{
+  question: string;
+  displayType: string | null;
+  showWinner: boolean | null;
+  live: boolean | null;
+  correctAnswer: any;
+} | null> => {
+  const db = await openDB();
+  const tx = db.transaction(STORE_NAME, "readonly");
+  const store = tx.objectStore(STORE_NAME);
+
+  const request = store.get(storedQuestionId);
+
+  return new Promise((resolve, reject) => {
+    request.onsuccess = () => {
+      const item = request.result as StoredQuestion | undefined;
+
+      if (!item) {
+        console.warn(`⚠️ StoredQuestion ${storedQuestionId} not found.`);
+        resolve(null);
+        return;
+      }
+
+      const d = item.data;
+
+      resolve({
+        question: d.question,
+        displayType: d.displayType ?? null,
+        showWinner: d.showWinner ?? null,
+        live: d.live ?? null,
+        correctAnswer: d.correctAnswer ?? null,
+      });
+    };
+
+    request.onerror = () => reject(request.error);
+  });
+};

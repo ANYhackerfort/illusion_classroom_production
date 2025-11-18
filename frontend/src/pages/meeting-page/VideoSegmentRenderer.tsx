@@ -45,7 +45,9 @@ const VideoSegmentRenderer: React.FC = () => {
     useState<QuestionCardData | null>(null);
   const { roomName, org_id } = useParams();
   const [adminAccess, setAdminAccess] = useState<boolean | null>(null);
-  const [participantAccess, setParticipantAccess] = useState<boolean>(false);
+  const [participantAccess, setParticipantAccess] = useState(
+    !!localStorage.getItem("participant_id") // ⭐ auto detect
+  );
   const [activeSurvey, setActiveSurvey] = useState<Survey | null>(null);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -147,6 +149,7 @@ const VideoSegmentRenderer: React.FC = () => {
     const handleMessage = async (event: MessageEvent) => {
       try {
         const msg = JSON.parse(event.data);
+        console.log("THE MESSAGE IS", msg)
 
         // 🟡 Meeting state changed (ended or resumed)
         if (msg.type === "meeting_state_changed" && msg.state) {
@@ -157,10 +160,25 @@ const VideoSegmentRenderer: React.FC = () => {
 
           if (ended) {
             console.log("🟥 Meeting ended detected — fetching active survey...");
+
+            // 🧹 Clear participant identity so new people can join fresh next time
+            localStorage.removeItem("participant_id");
+            localStorage.removeItem("participantName");
+            localStorage.removeItem("capturedPhoto");  // optional if you want clean reset
+
             await fetchActiveSurvey();
-            return;
+            console.log("SDFOPJSDOFPKSODFKPSDofk")
           } else {
             console.log("🟩 Meeting resumed — returning to video view");
+            const pid = localStorage.getItem("participant_id");
+            if (!pid) {
+              console.log("⚠️ No participant_id found — requiring rejoin.");
+              setParticipantAccess(false);   // ⛔ Force join gate
+            } else {
+              console.log("🟢 participant_id found — user stays authorized.");
+              setParticipantAccess(true);
+            }
+
             setActiveSurvey(null);
           }
 

@@ -1,3 +1,6 @@
+/* ============================================================
+   BASE PAGE STYLES
+   ============================================================ */
 .data-page {
   display: flex;
   flex-direction: column;
@@ -7,6 +10,15 @@
   overflow: auto;
 }
 
+.main-title {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+/* ============================================================
+   EXPORT BOX + SETTINGS
+   ============================================================ */
 .settings-row {
   display: flex;
   flex-direction: column;
@@ -15,7 +27,7 @@
 }
 
 .settings-title {
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 600;
   margin: 0;
   padding-left: 12px;
@@ -23,8 +35,8 @@
 }
 
 .settings-description {
-  font-size: 12px;
-  color: rgba(0, 0, 0, 0.5);
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.55);
   padding-left: 12px;
   margin-top: 4px;
 }
@@ -46,16 +58,19 @@
   background-color: #1e40af;
 }
 
+/* ============================================================
+   BAR CHART + DISTRIBUTION BOX
+   ============================================================ */
 .distribution-box {
-  background-color: #f9f9f9;
+  background-color: #f9fafb;
   border-radius: 16px;
   padding: 20px;
-  margin: 12px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+  margin: 12px 0;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.07);
 }
 
 .question-text {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   margin-bottom: 12px;
 }
@@ -104,12 +119,15 @@
   line-height: 24px;
 }
 
+/* ============================================================
+   SHORT ANSWERS (JSON VIEW MODE)
+   ============================================================ */
 .short-answers {
   list-style: none;
   padding: 0;
   margin: 0;
   font-size: 13px;
-  color: rgba(0, 0, 0, 0.8);
+  color: rgba(0, 0, 0, 0.85);
 }
 
 .short-answers li {
@@ -122,4 +140,468 @@
   font-size: 0.85rem;
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+/* ============================================================
+   MODE TOGGLE BUTTONS
+   ============================================================ */
+.toggle-container {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.toggle-btn {
+  padding: 10px 18px;
+  border-radius: 10px;
+  border: 2px solid #d1d5db;
+  background: #f3f4f6;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.15s ease-in-out;
+}
+
+.toggle-btn:hover {
+  background: #e5e7eb;
+}
+
+.toggle-btn.active {
+  border-color: #2563eb;
+  background: #2563eb;
+  color: white;
+}
+
+/* ============================================================
+   FRIENDLY UI MODE — MAIN LAYOUT
+   ============================================================ */
+.friendly-ui-wrapper {
+  display: flex;
+  gap: 24px;
+  width: 100%;
+  height: calc(100vh - 240px);
+}
+
+/* Left panel — participant list */
+.participant-list {
+  width: 280px;
+  background: #ffffff;
+  padding: 16px;
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.section-header {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+/* Individual participant list item */
+.participant-item {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #f3f4f6;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+}
+
+.participant-item:hover {
+  background: #e5e7eb;
+  transform: translateY(-1px);
+}
+
+.participant-item.active {
+  background: #2563eb;
+  color: white;
+}
+
+/* Small text helper */
+.small-text {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+/* Right panel — participant details */
+.participant-details {
+  flex: 1;
+  background: #ffffff;
+  padding: 20px 24px;
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  overflow-y: auto;
+}
+
+.empty {
+  font-size: 14px;
+  color: #6b7280;
+  padding: 8px;
+}
+
+/* ============================================================
+   RESPONSE CARDS INSIDE FRIENDLY UI
+   ============================================================ */
+.data-block {
+  margin-top: 20px;
+}
+
+.data-block h3 {
+  font-size: 17px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.response-card {
+  background: #f9fafb;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 12px;
+}
+
+.timestamp {
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 6px;
+}
+
+.response-text {
+  font-family: monospace;
+  font-size: 0.85rem;
+  white-space: pre-wrap;
+  background: #eef2f7;
+  padding: 10px;
+  border-radius: 8px;
+  word-break: break-word;
+}
+
+.video-response-item {
+  margin-top: 12px;
+}
+
+/* Friendly UI Layout */
+.friendly-ui-wrapper {
+  display: flex;
+  gap: 24px;
+}
+
+.participant-list {
+  width: 260px;
+  background: #f3f4f6;
+  padding: 16px;
+  border-radius: 16px;
+  overflow-y: auto;
+  height: 80vh;
+}
+
+.participant-item {
+  padding: 12px 16px;
+  background: white;
+  margin-bottom: 8px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.participant-item:hover {
+  background: #e5e7eb;
+}
+
+.participant-item.active {
+  background: #2563eb;
+  color: white;
+}
+
+.small-text {
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+/* Right Panel */
+.participant-details {
+  flex: 1;
+  padding: 16px;
+}
+
+/* Question Meta Card */
+.question-meta-card {
+  background: #ffffff;
+  padding: 18px;
+  margin-bottom: 20px;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+}
+
+.qm-header {
+  margin-bottom: 12px;
+}
+
+.qm-question {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.qm-meta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.badge {
+  background: #f3f4f6;        /* soft neutral gray */
+  padding: 3px 8px;
+  border-radius: 6px;         /* subtle, not bubbly */
+  font-size: 12px;
+  color: #374151;             /* neutral dark gray */
+  border: 1px solid #e5e7eb;  /* subtle border */
+  font-weight: 500;
+}
+
+/* Slight color accents, still professional */
+.badge.green {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+  color: #065f46;             /* deep, clean green */
+}
+
+.badge.purple {
+  background: #f5f3ff;
+  border-color: #ddd6fe;
+  color: #4c1d95;
+}
+
+.badge.red {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #7f1d1d;
+}
+
+
+/* Answer Cards */
+.answer-card {
+  background: #f9fafb;
+  padding: 12px;
+  border-radius: 12px;
+  margin-bottom: 10px;
+}
+
+.time-label {
+  font-size: 12px;
+  opacity: 0.7;
+  margin-bottom: 6px;
+}
+
+.answer-bubble {
+  background: #fafafa;            /* subtle neutral background */
+  padding: 10px 14px;
+  border-radius: 6px;             /* modern, minimal rounding */
+  border: 1px solid #e5e7eb;      /* thin soft border */
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04); /* micro-shadow */
+}
+
+.answer-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+}
+
+.answer-key {
+  font-weight: 600;
+}
+
+.answer-value {
+  opacity: 0.8;
+}
+
+.data-page {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  padding: 24px;
+  color: #000;
+}
+
+.toggle-container {
+  display: flex;
+  gap: 12px;
+}
+
+.toggle-btn {
+  padding: 10px 16px;
+  border-radius: 8px;
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.toggle-btn.active {
+  background: #2563eb;
+  color: white;
+}
+
+.settings-row {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.download-btn {
+  background-color: #2563eb;
+  color: #fff;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  width: fit-content;
+}
+
+.download-btn:hover {
+  background-color: #1e40af;
+}
+
+/* ---------- Friendly UI Layout ---------- */
+.friendly-ui-wrapper {
+  display: flex;
+  gap: 24px;
+}
+
+.participant-list {
+  width: 260px;
+  padding: 16px;
+  background: #f9fafb;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+}
+
+.participant-item {
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-bottom: 6px;
+  transition: background 0.15s;
+}
+
+.participant-item:hover {
+  background: #e5e7eb;
+}
+
+.participant-item.active {
+  background: #2563eb;
+  color: white;
+}
+
+.participant-details {
+  flex: 1;
+  background: #ffffff;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+}
+
+/* Question metadata cards */
+.question-meta-card {
+  border: 1px solid #e5e7eb;
+  padding: 16px;
+  border-radius: 12px;
+  margin-bottom: 18px;
+  background: #fafafa;
+}
+
+.qm-header {
+  margin-bottom: 10px;
+}
+
+.qm-question {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.qm-meta {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.badge {
+  padding: 4px 10px;
+  background: #e5e7eb;
+  font-size: 12px;
+  border-radius: 6px;
+  color: #111;
+  border: 1px solid #d1d5db;
+}
+
+.badge.green {
+  background: #10b98122;
+  border-color: #10b981;
+}
+
+.answer-card {
+  margin-top: 10px;
+}
+
+.time-label {
+  font-size: 12px;
+  color: #555;
+  margin-bottom: 6px;
+}
+
+.answer-bubble {
+  background: white;
+  border: 1px solid #e5e7eb;
+  padding: 12px;
+  border-radius: 8px;
+}
+
+.answer-key {
+  font-weight: 600;
+  margin-right: 6px;
+}
+
+.answer-row {
+  font-size: 14px;
+}
+
+/* ------------ CSV TABLE VIEW ------------ */
+.csv-table-wrapper {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px;
+  overflow: auto;
+}
+
+.csv-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.csv-table th {
+  background: #f3f4f6;
+  padding: 10px;
+  text-align: left;
+  border-bottom: 1px solid #e5e7eb;
+  font-weight: 600;
+}
+
+.csv-table td {
+  padding: 10px;
+  border-bottom: 1px solid #f1f1f1;
+}
+
+.csv-table tr:nth-child(even) {
+  background: #fafafa;
+}
+
+.csv-table tr:hover {
+  background: #f1f5f9;
 }

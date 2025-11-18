@@ -9,7 +9,7 @@ const JoinMeetingPage: React.FC = () => {
 
   const handleJoin = () => {
     if (roomName.trim()) {
-      navigate(`/join_room/${roomName}`);
+      navigate(`/meeting-room/${roomName}`);
     }
   };
 
@@ -38,13 +38,13 @@ const JoinMeetingPage: React.FC = () => {
         </Typography>
 
         <Typography variant="subtitle1" className="login-description">
-          Enter a room name to connect instantly
+          Enter a room code to connect instantly
         </Typography>
 
         <TextField
           fullWidth
           variant="outlined"
-          placeholder="Room Name"
+          placeholder="EX: /2/video2"
           value={roomName}
           onChange={(e) => setRoomName(e.target.value)}
           className="room-input"

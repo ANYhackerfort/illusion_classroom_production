@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 import "./MCQuestion.css";
 import { getUserInfo } from "../../../api/userApi";
-import { storeVideoQuestionAnswers } from "../../videoDisplayer/api/save";
+import { storeVideoQuestionAnswers } from "../../../components/videoDisplayer/api/save";
 import { useParams } from "react-router-dom";
-import type { GetBotAnswersResponse } from "../../videoDisplayer/api/save";
+import type { GetBotAnswersResponse } from "../../../components/videoDisplayer/api/save";
 
 // ✅ Constants
 export const REVEAL_THRESHOLD_SECONDS = 6; // seconds before end to reveal correct answers
@@ -37,7 +37,7 @@ const MCQQuestion: React.FC<MCQQuestionProps> = ({
   end = 0,
   botAnswersData,
 }) => {
-  const [selectedAnswers, setSelectedAnswers] = useState<string[]>([]);
+  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [userInfo, setUserInfo] = useState<{ name: string; picture: string }>({
     name: "Anonymous",
     picture: ANON_IMAGE,
@@ -138,28 +138,29 @@ const MCQQuestion: React.FC<MCQQuestionProps> = ({
 
   // ✅ Handle user selection (disabled after reveal)
   const handleClick = async (index: number) => {
-    if (winnerVisible) return; // disable clicks after reveal
+    if (winnerVisible) return;
+
+    // ⭐ Require participant_id (user must join first)
+    const participantId = localStorage.getItem("participant_id");
+    if (!participantId) {
+      console.warn("❌ No participant_id found — cannot submit answer.");
+      return;
+    }
 
     const answer = answers[index];
-    setSelectedAnswers((prev) => {
-      const updated = prev.includes(answer)
-        ? prev.filter((a) => a !== answer)
-        : [...prev, answer];
-      const participantName =
-        localStorage.getItem("participantName") || userInfo.name;
+    setSelectedAnswer(answer);
 
-      if (org_id && roomName && questionId) {
-        storeVideoQuestionAnswers(
-          Number(org_id),
-          roomName,
-          questionId,
-          participantName,
-          { answers: updated }
-        );
-      }
-      return updated;
-    });
+    if (org_id && roomName && questionId) {
+      await storeVideoQuestionAnswers(
+        Number(org_id),
+        roomName,
+        questionId,
+        participantId,          // ⭐ use ID, not name
+        { answers: [answer] }   // ⭐ single answer array
+      );
+    }
   };
+
 
   // ✅ Avatar renderer
   const renderAvatar = (name: string, imgUrl: string) => {
@@ -199,7 +200,7 @@ const MCQQuestion: React.FC<MCQQuestionProps> = ({
 
       <div className={`mcq-answers ${winnerVisible ? "reveal-active" : ""}`}>
         {answers.map((answer, index) => {
-          const userSelected = selectedAnswers.includes(answer);
+          const userSelected = selectedAnswer === answer;
           const botsHere = botSelections.filter((b) => b.answer === answer);
 
           return (

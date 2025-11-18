@@ -2012,7 +2012,11 @@ def get_bot_names_and_videos(request, meeting_name):
 @require_POST
 @csrf_exempt
 def join_room(request, org_id, meeting_name):
-    COOKIE_MAX_AGE = 12 * 60 * 60  # 12 hours in seconds
+    COOKIE_MAX_AGE = 12 * 60 * 60  # 12 hours
+
+    # -----------------------------
+    #  Parse JSON
+    # -----------------------------
     try:
         body = json.loads(request.body)
     except json.JSONDecodeError:
@@ -2020,14 +2024,17 @@ def join_room(request, org_id, meeting_name):
 
     owner_email = (body.get("owner_email") or "").strip().lower()
     name = (body.get("name") or "").strip()
+    participant_id = (body.get("participant_id") or "").strip()
 
-    if not owner_email or not name:
+    if not owner_email or not name or not participant_id:
         return JsonResponse({
             "ok": False,
-            "message": "Missing required fields: owner_email or name."
+            "message": "Missing required fields: owner_email, name, or participant_id."
         }, status=400)
 
-    # ✅ Manual org + meeting lookup
+    # -----------------------------
+    #  Validate Org + Meeting
+    # -----------------------------
     org = Organization.objects.filter(id=org_id).first()
     if org is None:
         return JsonResponse({"ok": False, "message": "Organization not found."}, status=404)
@@ -2036,39 +2043,51 @@ def join_room(request, org_id, meeting_name):
     if meeting is None:
         return JsonResponse({"ok": False, "message": "Meeting not found."}, status=404)
 
-    # ✅ Email match check
-    actual_email = (meeting.owner.email or "").strip().lower()
-    if actual_email != owner_email:
+    # -----------------------------
+    #  Validate Owner Email
+    # -----------------------------
+    if (meeting.owner.email or "").strip().lower() != owner_email:
         return JsonResponse({
             "ok": False,
             "message": "Owner email does not match meeting owner."
         }, status=403)
 
-    # ✅ Compose Redis key from name
+    # -----------------------------
+    #  Store temporary access in Redis
+    # -----------------------------
     safe_name = name.lower().replace(" ", "_")
     redis_key = f"join_room:{org_id}:{meeting_name}:{safe_name}"
-
-    # ✅ Cache for 12 hours
     cache.set(redis_key, True, timeout=COOKIE_MAX_AGE)
 
-    # ✅ JSON response
-    response = JsonResponse({
-        "ok": True,
-        "message": "Access verified and stored for 12 hours.",
-    })
+    # -----------------------------
+    #  ⭐ NEW: Create participant in DB
+    # -----------------------------
 
-    # ✅ Secure HttpOnly cookie
-    response.set_cookie(
-        key=f"join_auth_{org_id}_{meeting_name}",
-        value=safe_name,
-        max_age=COOKIE_MAX_AGE,
-        httponly=True,
-        secure=True,
-        samesite="Lax",
-        path="/",
+    participant_obj, created = ParticipantResponse.objects.get_or_create(
+        meeting=meeting,
+        participant_id=participant_id,   # <-- unique
+        defaults={
+            "name": name,
+        }
     )
 
+    # If they changed their name (refresh page, typo fix, etc.)
+    if not created and participant_obj.name != name:
+        participant_obj.name = name
+        participant_obj.save()
+
+    # -----------------------------
+    #  Build JSON response
+    # -----------------------------
+    response = JsonResponse({
+        "ok": True,
+        "message": "Access verified and participant registered.",
+        "participant_id": participant_id,
+        "created": created,
+    })
+
     return response
+
 
 @csrf_exempt
 def get_meeting_owner(request, org_id, meeting_name):
@@ -2308,57 +2327,115 @@ def store_quatric_survey_answers(request, org_id, room_name):
 
     return JsonResponse({"ok": True, "message": "Survey answers stored", "entry": entry})
 
+from .models import ParticipantResponse
+
 @csrf_exempt
 @require_POST
 def store_video_question_answers(request, org_id, room_name, question_id):
     """
-    Stores or replaces participant answers for a specific video question.
-    Cache key is scoped to org, room, participant, and question ID.
-    Replaces any previous answer for that question instead of appending.
+    Stores participant answers for a specific video question.
+    Uses participant_id for identity.
+    Writes to Redis (fast) and PostgreSQL (persistent).
     """
+
     COOKIE_MAX_AGE = 12 * 60 * 60  # 12 hours
 
-    # ✅ Parse JSON body safely
+    # --- Parse JSON ---
+
     try:
         data = json.loads(request.body)
     except json.JSONDecodeError:
         return JsonResponse({"ok": False, "message": "Invalid JSON"}, status=400)
 
-    participant_name = data.get("participant_name")
+    participant_id = data.get("participant_id")
     answers = data.get("answers")
 
-    if not participant_name or not isinstance(answers, dict):
+    if not participant_id or not isinstance(answers, dict):
         return JsonResponse(
-            {"ok": False, "message": "Missing participant_name or answers"},
+            {"ok": False, "message": "Missing participant_id or answers"},
             status=400
         )
 
-    # ✅ Build Redis key per participant & question
-    safe_name = participant_name.lower().replace(" ", "_")
-    redis_key = f"video_question:{org_id}:{room_name}:{safe_name}:{question_id}:answers"
+    # ----------------------
+    #   🔹 1. Store in Redis
+    # ----------------------
 
-    # ✅ Replace any previous entries — store only the latest answer
+    redis_key = f"video_question:{org_id}:{room_name}:{participant_id}:{question_id}:answers"
+
     entry = {
         "timestamp": now().isoformat(),
-        "answers": answers
+        "answers": answers,
     }
 
     cache.set(redis_key, [entry], timeout=COOKIE_MAX_AGE)
 
-    print(f"✅ Stored (replaced) in {redis_key}")
+    # ----------------------
+    #   🔹 2. Meeting Lookup
+    # ----------------------
+
+    try:
+        meeting = Meeting.objects.get(
+            organization_id=org_id,
+            name=room_name
+        )
+    except Meeting.DoesNotExist:
+        return JsonResponse({"ok": False, "message": "Meeting not found"}, status=404)
+
+    # ----------------------
+    #   🔹 3. Participant Lookup (Correct Version)
+    # ----------------------
+
+    try:
+        participant_obj = ParticipantResponse.objects.get(
+            meeting=meeting,
+            participant_id=participant_id  # your custom ID field
+        )
+    except ParticipantResponse.DoesNotExist:
+        return JsonResponse({"ok": False, "message": "Unknown participant"}, status=404)
+
+    # ----------------------
+    #   🔹 4. Update JUST this question’s answer
+    # ----------------------
+
+    participant_obj.answers[str(question_id)] = {
+        "answers": answers,
+        "timestamp": entry["timestamp"],
+    }
+    participant_obj.save()
+
+    print(f"🗄️ DB Updated: ParticipantResponse(id={participant_obj.id})")
+
+    # ----------------------
+    #   🔹 5. Response
+    # ----------------------
+
     return JsonResponse({
         "ok": True,
-        "message": "Video question answer stored (replaced previous entry)",
-        "entry": entry
+        "message": "Video question answer stored successfully (Redis + DB)",
+        "entry": entry,
     })
+
+
+import uuid
+
+def is_valid_uuid(val: str) -> bool:
+    try:
+        uuid.UUID(str(val))
+        return True
+    except ValueError:
+        return False
 
 @csrf_exempt
 def get_all_video_question_answers(request, org_id, room_name):
     """
-    Returns all stored video question answers for a given meeting across all participants and question IDs.
+    Returns all stored video question answers for a given meeting
+    across all participants and question IDs.
+    Uses participant_id (unique) instead of names.
+    Also merges with DB to retrieve the participant's real name.
     """
     try:
-        # Example key pattern: video_question:{org_id}:{room_name}:{safe_name}:{question_id}:answers
+        # Redis key pattern:
+        # video_question:{org_id}:{room_name}:{participant_id}:{question_id}:answers
         keys = cache.keys(f"video_question:{org_id}:{room_name}:*:*:answers")
         print("🎯 Video question keys found:", keys)
 
@@ -2369,30 +2446,55 @@ def get_all_video_question_answers(request, org_id, room_name):
                 "participants": []
             })
 
+        # Fetch meeting for DB lookup
+        try:
+            meeting = Meeting.objects.get(
+                organization_id=org_id,
+                name=room_name
+            )
+        except Meeting.DoesNotExist:
+            return JsonResponse({"ok": False, "message": "Meeting not found"}, status=404)
+
         results = []
+
         for key in keys:
             parts = key.split(":")
             if len(parts) < 6:
-                continue  # skip malformed keys
+                continue
 
-            safe_name = parts[3]
+            participant_id = parts[3]
             question_id = parts[4]
-            data = cache.get(key)
+            if not is_valid_uuid(participant_id):
+                print(f"⚠️ Skipping legacy key: {key}")
+                continue
+            redis_data = cache.get(key)
+
+            # Fetch participant name from DB
+            participant_name = None
+            try:
+                participant_obj = ParticipantResponse.objects.get(
+                    meeting=meeting, 
+                    participant_id=participant_id
+                )
+                participant_name = participant_obj.name
+            except ParticipantResponse.DoesNotExist:
+                participant_name = "Unknown Participant"
 
             results.append({
-                "participant": safe_name.replace("_", " "),
+                "participant_id": participant_id,
+                "participant_name": participant_name,
                 "question_id": question_id,
-                "count": len(data) if isinstance(data, list) else 0,
-                "answers": data or []
+                "count": len(redis_data) if isinstance(redis_data, list) else 0,
+                "answers": redis_data or []
             })
 
         return JsonResponse({
             "ok": True,
             "org_id": org_id,
             "room_name": room_name,
-            "total_participants": len({r["participant"] for r in results}),
+            "total_participants": len({r["participant_id"] for r in results}),
             "total_entries": len(results),
-            "participants": results
+            "participants": results,
         })
 
     except Exception as e:

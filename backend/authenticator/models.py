@@ -28,7 +28,6 @@ class Organization(models.Model):
     def __str__(self):
         return self.name
 
-
 class Meeting(models.Model):
     organization = models.ForeignKey(
         Organization, on_delete=models.CASCADE, related_name="meetings"
@@ -51,6 +50,34 @@ class Meeting(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.organization.name})"
+
+class ParticipantResponse(models.Model):
+    meeting = models.ForeignKey(
+        Meeting,
+        on_delete=models.CASCADE,     # delete responses if meeting is deleted
+        related_name="responses",
+    )
+
+    # Name DOES NOT need to be unique
+    name = models.CharField(max_length=255)
+    participant_id = models.CharField(max_length=100)
+
+
+    # JSON dictionary of answers keyed by question_id
+    # Example:
+    # {
+    #     "Q1": {"answer": "A", "timestamp": "..."},
+    #     "Q2": {"answer": "C", "timestamp": "..."},
+    # }
+    answers = models.JSONField(default=dict, blank=True)
+
+    # Update this automatically whenever 'answers' is modified
+    last_answered_at = models.DateTimeField(auto_now=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.name} — {self.meeting.name}"
 
 class Video(models.Model):
     meeting = models.ForeignKey(

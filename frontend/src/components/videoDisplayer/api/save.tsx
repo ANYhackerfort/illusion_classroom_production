@@ -843,18 +843,21 @@ export const storeVideoQuestionAnswers = async (
   orgId: number,
   roomName: string,
   questionId: string | number,
-  participantName: string,
+  participantId: string,      // ⭐ NEW
   answers: Record<string, any>,
 ): Promise<{ ok: boolean; message: string }> => {
   try {
     const response = await axiosClient.post(
       `/api/auth/store_video_question_answers/${encodeURIComponent(orgId)}/${encodeURIComponent(roomName)}/${encodeURIComponent(questionId)}/`,
       {
-        participant_name: participantName,
+        participant_id: participantId,   // ⭐ USE ID NOT NAME
         answers,
       },
-      { withCredentials: true },
+      {
+        headers: { "Content-Type": "application/json" },
+      },
     );
+
     return response.data;
   } catch (error: any) {
     console.error("❌ Failed to store video question answers:", error);
@@ -878,6 +881,7 @@ export const getAllVideoQuestionAnswers = async (
     return { ok: false, participants: [] };
   }
 };
+
 
 // 🧩 Individual bot answer entry
 export interface BotAnswerEntry {
