@@ -15,7 +15,7 @@ import {
 } from "./interfaces/bot_drop";
 import { useOrgSocketContext } from "../../finder/socket/OrgSocketContext";
 import { useParams } from "react-router-dom";
-import { getMeetingId } from "../../components/videoDisplayer/api/save";
+import { getMeetingId } from "../videoDisplayer/api/save";
 import type { ServerBot } from "./interfaces/bot_drop";
 
 interface VideoDropBoxProps {
